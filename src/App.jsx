@@ -1156,4 +1156,14 @@ export default function App() {
       </div>
     </div>
   )
+    <div style={{borderTop:"1px solid #1d3a1d",background:"#090f09",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <div style={{fontFamily:"Oswald",fontSize:13,fontWeight:700,color:"#d4a017"}}>WESTFIELD SHAMROCKS(TM)</div>
+      <div style={{textAlign:"center",fontSize:11,color:"#9ca3af"}}>(C) 2025-2026 Westfield Shamrocks Football Program. All Rights Reserved. Unauthorized use strictly prohibited.</div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{background:"#101e10",border:"1px solid #1d3a1d",borderRadius:5,padding:"4px 9px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#d4a017"}}>(C) COPYRIGHT</div><div style={{fontSize:8,color:"#6b8f6b"}}>2025-2026</div></div>
+        <div style={{background:"#101e10",border:"1px solid #1d3a1d",borderRadius:5,padding:"4px 9px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#d4a017"}}>(TM) TRADEMARK</div><div style={{fontSize:8,color:"#6b8f6b"}}>Pending</div></div>
+        <div style={{background:"#101e10",border:"1px solid #1d3a1d",borderRadius:5,padding:"4px 9px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#d4a017"}}>CONFIDENTIAL</div><div style={{fontSize:8,color:"#6b8f6b"}}>Internal Only</div></div>
+      </div>
+    </div>
+  )
 }
