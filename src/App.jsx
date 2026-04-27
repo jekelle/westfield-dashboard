@@ -538,12 +538,13 @@ export default function App() {
   const [fQB,         setFQB]        = useState('All QBs')
   const [fSit,        setFSit]       = useState('All')
   const [fDate,       setFDate]      = useState('All')
-  const [plays,       setPlays]      = useState(SEED_PLAYS)
+  const [plays,       setPlays]      = useState(()=>{try{const s=localStorage.getItem("wf");return s?[...JSON.parse(s)]:SEED_PLAYS}catch{return SEED_PLAYS}})
   const [replayIdx,   setReplayIdx]  = useState(0)
   const [playerQB,    setPlayerQB]   = useState('QB1')
   const [showImport,  setImport]     = useState(false)
 
   // Merge imported plays, assign fresh IDs
+  React.useEffect(()=>{try{localStorage.setItem("wf",JSON.stringify(plays))}catch(e){}},[plays])
   const handleImport = useCallback(newRows => {
     setPlays(prev => {
       const maxId = prev.reduce((m, p) => Math.max(m, p.id), 0)
