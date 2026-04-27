@@ -538,7 +538,7 @@ export default function App() {
   const [fQB,         setFQB]        = useState('All QBs')
   const [fSit,        setFSit]       = useState('All')
   const [fDate,       setFDate]      = useState('All')
-  const [plays,       setPlays]      = useState(SEED_PLAYS)
+  const [plays,setPlays]=useState(()=>{try{const s=localStorage.getItem("wf_plays");return s?JSON.parse(s):SEED_PLAYS}catch{return SEED_PLAYS}})
   const [replayIdx,   setReplayIdx]  = useState(0)
   const [playerQB,    setPlayerQB]   = useState('QB1')
   const [showImport,  setImport]     = useState(false)
@@ -552,6 +552,7 @@ export default function App() {
     })
   }, [])
 
+  React.useEffect(()=>{try{localStorage.setItem("wf_plays",JSON.stringify(plays))}catch(e){}},[plays])
   React.useEffect(()=>{try{localStorage.setItem("wf_plays",JSON.stringify(plays))}catch(e){}},[plays])
   const dates = useMemo(() => ['All', ...new Set(plays.map(p => p.date))], [plays])
 
