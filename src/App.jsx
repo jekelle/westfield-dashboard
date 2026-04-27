@@ -538,7 +538,7 @@ export default function App() {
   const [fQB,         setFQB]        = useState('All QBs')
   const [fSit,        setFSit]       = useState('All')
   const [fDate,       setFDate]      = useState('All')
-  const [plays,setPlays]=useState(()=>{try{const s=localStorage.getItem("wf_plays");return s?JSON.parse(s):SEED_PLAYS}catch{return SEED_PLAYS}})
+  const [plays,       setPlays]      = useState(SEED_PLAYS)
   const [replayIdx,   setReplayIdx]  = useState(0)
   const [playerQB,    setPlayerQB]   = useState('QB1')
   const [showImport,  setImport]     = useState(false)
@@ -552,8 +552,6 @@ export default function App() {
     })
   }, [])
 
-  React.useEffect(()=>{try{localStorage.setItem("wf_plays",JSON.stringify(plays))}catch(e){}},[plays])
-  React.useEffect(()=>{try{localStorage.setItem("wf_plays",JSON.stringify(plays))}catch(e){}},[plays])
   const dates = useMemo(() => ['All', ...new Set(plays.map(p => p.date))], [plays])
 
   const rows = useMemo(() => plays.filter(p =>
@@ -1155,9 +1153,6 @@ export default function App() {
               {tab==='Next Practice' && <NextPractice/>}
             </>
         }
-      </div>
-      <div style={{borderTop:"1px solid #1d3a1d",background:"#090f09",padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
-        <div style={{fontFamily:"Oswald",fontSize:12,fontWeight:700,color:"#d4a017"}}>(C) 2025-2026 Westfield Shamrocks Football Program. All Rights Reserved. (TM) Trademark Pending. Confidential - Internal Use Only.</div>
       </div>
     </div>
   )
