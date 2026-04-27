@@ -1154,9 +1154,6 @@ export default function App() {
             </>
         }
       </div>
-      <div style={{borderTop:"1px solid #1d3a1d",background:"#090f09",padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
-        <div style={{fontFamily:"Oswald",fontSize:12,fontWeight:700,color:"#d4a017"}}>(C) 2025-2026 Westfield Shamrocks Football Program. All Rights Reserved. (TM) Trademark Pending. Confidential - Internal Use Only.</div>
-      </div>
     </div>
   )
 }
