@@ -595,9 +595,7 @@ export default function App() {
         {/* Left */}
         <div style={{ width:168, flexShrink:0, display:'flex', flexDirection:'column', gap:8 }}>
           <Card title="FILTERS">
-            {['All Segments','All Plays','All Results','All Sides','All Concepts','All Situations','All Looks','All Decision Speeds'].map(f =>
-              <select key={f} style={{ ...selS, display:'block', width:'100%', marginBottom:4 }}><option>{f}</option></select>
-            )}
+            <select value={fQB} onChange={e=>setFQB(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{['All QBs','QB1','QB2','QB3'].map(o=><option key={o}>{o}</option>)}</select><select value={fSit} onChange={e=>setFSit(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{[['All','All Situations'],['normal','Normal Field'],['redzone','Redzone']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select value={fDate} onChange={e=>setFDate(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{dates.map(d=><option key={d} value={d}>{d==='All'?'All Dates':d}</option>)}</select>
           </Card>
           <Card>
             <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
