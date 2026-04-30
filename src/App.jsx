@@ -595,7 +595,7 @@ export default function App() {
         {/* Left */}
         <div style={{ width:168, flexShrink:0, display:'flex', flexDirection:'column', gap:8 }}>
           <Card title="FILTERS">
-            <select value={fQB} onChange={e=>setFQB(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{['All QBs','QB1','QB2','QB3'].map(o=><option key={o}>{o}</option>)}</select><select value={fSit} onChange={e=>setFSit(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{[['All','All Situations'],['normal','Normal Field'],['redzone','Redzone']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select value={fDate} onChange={e=>setFDate(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{dates.map(d=><option key={d} value={d}>{d==='All'?'All Dates':d}</option>)}</select>
+            <select value={fQB} onChange={e=>setFQB(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{['All QBs','QB1','QB2','QB3','Aiden Grabowski','Cooper Melvin','Ben Kooi'].map(o=><option key={o}>{o}</option>)}</select><select value={fSit} onChange={e=>setFSit(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{[['All','All Situations'],['normal','Normal Field'],['redzone','Redzone']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select value={fDate} onChange={e=>setFDate(e.target.value)} style={{...selS,display:'block',width:'100%',marginBottom:6}}>{dates.map(d=><option key={d} value={d}>{d==='All'?'All Dates':d}</option>)}</select>
           </Card>
           <Card>
             <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
@@ -1092,7 +1092,7 @@ export default function App() {
           {TABS.map(t=><button key={t} onClick={()=>setTab(t)} style={btnTab(t)}>{t}</button>)}
         </div>
         <div style={{ display:'flex', gap:7, alignItems:'center', flexShrink:0 }}>
-          <select value={fQB}   onChange={e=>setFQB(e.target.value)}   style={selS}>{['All QBs','QB1','QB2','QB3'].map(o=><option key={o}>{o}</option>)}</select>
+          <select value={fQB}   onChange={e=>setFQB(e.target.value)}   style={selS}>{['All QBs','QB1','QB2','QB3','Aiden Grabowski','Cooper Melvin','Ben Kooi'].map(o=><option key={o}>{o}</option>)}</select>
           <select value={fSit}  onChange={e=>setFSit(e.target.value)}  style={selS}>{[['All','All Situations'],['normal','Normal'],['redzone','Redzone']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
           <select value={fDate} onChange={e=>setFDate(e.target.value)} style={selS}>{dates.map(d=><option key={d} value={d}>{d==='All'?'All Dates':d}</option>)}</select>
           {/* IMPORT BUTTON */}
