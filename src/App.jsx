@@ -455,7 +455,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
             {manual.map((row, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, marginBottom: 8, padding: 8, background: '#0d1a0d', borderRadius: 5 }}>
                 <select value={row.qb}     onChange={e => { const m=[...manual];m[i].qb=e.target.value;setManual(m) }}     style={inp}>
-                  {['Aiden Grabowski','Cooper Melvin','Ben Kooi'].map(o=><option key={o}>{o}</option>)}
+                  {['Cooper Melvin','Ben Kooi'].map(o=><option key={o}>{o}</option>)}
                 </select>
                 <select value={row.concept} onChange={e => { const m=[...manual];m[i].concept=e.target.value;setManual(m) }} style={inp}>
                   {Object.keys(ROUTES).map(o=><option key={o}>{o}</option>)}
@@ -956,7 +956,7 @@ export default function App() {
   function Mistakes() {
     const incomplete = rows.filter(p=>!ok(p))
     const byC = [...new Set(incomplete.map(p=>p.concept))].map(name=>{const tot=rows.filter(p=>p.concept===name),fail=incomplete.filter(p=>p.concept===name);return{name,fails:fail.length,total:tot.length,pct:Math.round(fail.length/tot.length*100)}}).sort((a,b)=>b.fails-a.fails)
-    const byQB = ['Aiden Grabowski','Cooper Melvin','Ben Kooi'].map(qb=>{const tot=rows.filter(p=>p.qb===qb),fail=incomplete.filter(p=>p.qb===qb);return{qb,fails:fail.length,pct:tot.length?Math.round(fail.length/tot.length*100):0}})
+    const byQB = ['Cooper Melvin','Ben Kooi'].map(qb=>{const tot=rows.filter(p=>p.qb===qb),fail=incomplete.filter(p=>p.qb===qb);return{qb,fails:fail.length,pct:tot.length?Math.round(fail.length/tot.length*100):0}})
     return (
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
