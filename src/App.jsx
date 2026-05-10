@@ -197,6 +197,73 @@ function parseCSV(text) {
 
 // ─── Shared UI pieces ────────────────────────────────────────
 function Card({ title, titleClr, children, style = {} }) {
+
+  const passerRating = (qbName) => {
+    const qbPlays = plays.filter(p => p.qb === qbName)
+    if(qbPlays.length === 0) return 0
+    const att = qbPlays.length
+    const comp = qbPlays.filter(p => p.result === 'Complete').length
+    const yds = qbPlays.reduce((a,p) => a + p.yards, 0)
+    const td = qbPlays.filter(p => p.yards >= 20 && p.result === 'Complete').length
+    const inc = qbPlays.filter(p => p.result === 'Incomplete').length
+    const a = Math.min(Math.max(((comp/att) - 0.3) * 5, 0), 2.375)
+    const b = Math.min(Math.max(((yds/att) - 3) * 0.25, 0), 2.375)
+    const c = Math.min(Math.max((td/att) * 20, 0), 2.375)
+    const d = Math.min(Math.max(2.375 - ((inc/att) * 25), 0), 2.375)
+    return Math.round(((a + b + c + d) / 6) * 100)
+  }
+  const HeatMapTab = () => {
+    const qbs = [{name:'Cooper Melvin',color:'#22c55e'},{name:'Ben Kooi',color:'#d4a017'}]
+    const zones = ['Left Deep','Mid Deep','Right Deep','Left Short','Mid Short','Right Short']
+    const concepts = {
+      'Left Deep':['Post','Fade'],'Mid Deep':['Verticals','Four Verts'],'Right Deep':['Sail'],
+      'Left Short':['Out','Slant'],'Mid Short':['Baltimore','Smash','Stick'],'Right Short':['Out','Slant','Stick']
+    }
+    const deep = ['Left Deep','Mid Deep','Right Deep']
+    const getPlays = (qb, zone) => {
+      const c = concepts[zone]
+      const isDeep = deep.includes(zone)
+      return plays.filter(p => p.qb===qb && c.includes(p.concept) && (isDeep ? p.yards>=15 : p.yards<10))
+    }
+    const pct = (arr) => arr.length===0 ? null : Math.round(arr.filter(p=>p.result==='Complete').length/arr.length*100)
+    const bg = (p) => p===null?'#1a1a1a':p>=80?'#15803d':p>=60?'#854d0e':'#7f1d1d'
+    const label = (arr) => { const p=pct(arr); return p===null?'No data':p+'% ('+arr.length+')' }
+    return (
+      <div style={{padding:24}}>
+        <div style={{fontSize:13,fontWeight:700,color:'#d4a017',letterSpacing:2,marginBottom:16}}>QB FIELD HEAT MAPS</div>
+        <div style={{display:'flex',gap:16}}>
+          {qbs.map(({name,color})=>{
+            const r=passerRating(name)
+            const rc=r>=90?'#22c55e':r>=70?'#d4a017':'#ef4444'
+            const rz=plays.filter(p=>p.qb===name&&p.field==='redzone')
+            return (
+              <div key={name} style={{flex:1,background:'#111811',border:'1px solid #1d3a1d',borderRadius:8,padding:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:12}}>
+                  <div style={{fontSize:12,fontWeight:700,color}}>{name.toUpperCase()}</div>
+                  <div style={{textAlign:'right'}}><div style={{fontSize:8,color:'#9ca3af'}}>PASSER RATING</div><div style={{fontSize:22,fontWeight:700,color:rc}}>{r}</div></div>
+                </div>
+                <div style={{background:'#0d1f0d',border:'2px solid #1d3a1d',borderRadius:6,padding:8}}>
+                  <div style={{textAlign:'center',fontSize:8,color:'#4ade80',marginBottom:6,borderBottom:'1px solid #1d3a1d',paddingBottom:4}}>FIELD HEAT MAP</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,marginBottom:6}}>
+                    {deep.map(z=>{const arr=getPlays(name,z);return(<div key={z} style={{background:bg(pct(arr)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #1d3a1d'}}><div style={{fontSize:7,color:'#9ca3af',marginBottom:2}}>{z.toUpperCase()}</div><div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(arr)}</div></div>)})}
+                  </div>
+                  <div style={{borderTop:'2px dashed #4ade80',marginBottom:6,textAlign:'center',paddingTop:4}}><span style={{fontSize:7,color:'#4ade80'}}>LINE OF SCRIMMAGE</span></div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,marginBottom:6}}>
+                    {['Left Short','Mid Short','Right Short'].map(z=>{const arr=getPlays(name,z);return(<div key={z} style={{background:bg(pct(arr)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #1d3a1d'}}><div style={{fontSize:7,color:'#9ca3af',marginBottom:2}}>{z.toUpperCase()}</div><div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(arr)}</div></div>)})}
+                  </div>
+                  <div style={{background:bg(pct(rz)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #ef4444'}}>
+                    <div style={{fontSize:7,color:'#fca5a5',marginBottom:2}}>RED ZONE</div>
+                    <div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(rz)}</div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
