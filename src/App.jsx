@@ -264,6 +264,107 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const NextGenTab = () => {
+    const zones = [
+      { label: 'LEFT DEEP', concept: 'Post / Fade', c: 85, b: 82 },
+      { label: 'MID DEEP', concept: 'Verts / 4V', c: 88, b: 86 },
+      { label: 'RIGHT DEEP', concept: 'Sail / Fade', c: 0, b: 0 },
+      { label: 'LEFT SHORT', concept: 'Out / Slant', c: 73, b: 70 },
+      { label: 'MID SHORT', concept: 'Stick / Smash', c: 87, b: 85 },
+      { label: 'RIGHT SHORT', concept: 'Out / Slant', c: 73, b: 68 },
+      { label: 'RED ZONE', concept: 'All Concepts', c: 0, b: 0 },
+    ]
+    const zc = (p) => p >= 80 ? '#22c55e' : p >= 65 ? '#d97706' : '#dc2626'
+    const bc = (p) => p >= 80 ? '#14532d' : p >= 65 ? '#7d5a00' : '#7f1d1d'
+    const metrics = [
+      { key: 'ttt', label: 'timeToThrow (TTT)', desc: 'Seconds from snap to ball release', nfl: '2.36s avg', color: '#06b6d4' },
+      { key: 'air', label: 'airYards', desc: 'Avg downfield distance from LOS to target', nfl: '8.0 yds avg', color: '#F0B429' },
+      { key: 'cp', label: 'completionProbability', desc: 'Overall comp % based on zone and coverage', nfl: '65% avg', color: '#22c55e' },
+      { key: 'cpoe', label: 'CPOE', desc: 'Comp % Over Expected vs projected rate', nfl: '0% baseline', color: '#7c3aed' },
+      { key: 'deep', label: 'deepBall Accuracy', desc: 'Comp % on throws 20+ yards downfield', nfl: '52% avg', color: '#06b6d4' },
+      { key: 'hash', label: 'hashAccuracy', desc: 'Comp % on left and right hash throws', nfl: '71% avg', color: '#F0B429' },
+    ]
+    return (
+      <div style={{padding:24}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2,marginBottom:4}}>⚡  NFL NEXTGEN STATS METHODOLOGY — APPLIED TO WESTFIELD SHAMROCKS</div>
+          <div style={{fontSize:8,color:'#777'}}>airDistance · airYards · timeToThrow · targetSeparation · passerSpeed · completionProbability · pressureRate</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
+          {metrics.map(m=>(
+            <div key={m.key} style={{background:'#111',border:`1px solid ${m.color}44`,borderRadius:6,padding:10,borderLeft:`3px solid ${m.color}`}}>
+              <div style={{fontSize:9,fontWeight:700,color:m.color,marginBottom:2}}>{m.label}</div>
+              <div style={{fontSize:8,color:'#ccc',marginBottom:4}}>{m.desc}</div>
+              <div style={{fontSize:7,color:'#666'}}>NFL Benchmark: {m.nfl}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:10,fontWeight:700,color:'#d4a017',letterSpacing:2,marginBottom:8,borderBottom:'1px solid #1d3a1d',paddingBottom:4}}>COMPLETION PROBABILITY BY ZONE</div>
+        <div style={{background:'#0d0d0d',border:'1px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',background:'#0a0a0a',padding:'6px 12px',borderBottom:'1px solid #1d3a1d'}}>
+            <div style={{fontSize:7,fontWeight:700,color:'#666'}}>ZONE / CONCEPT</div>
+            <div style={{fontSize:7,fontWeight:700,color:'#22c55e',textAlign:'center'}}>COOPER MELVIN  QB1</div>
+            <div style={{fontSize:7,fontWeight:700,color:'#F0B429',textAlign:'center'}}>BEN KOOI  QB2</div>
+          </div>
+          {zones.map((z,i)=>(
+            <div key={z.label} style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',padding:'8px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'1px solid #1a1a1a'}}>
+              <div><div style={{fontSize:9,fontWeight:700,color:'#d4a017'}}>{z.label}</div><div style={{fontSize:7,color:'#555'}}>{z.concept}</div></div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{flex:1,background:'#1a1a1a',borderRadius:3,height:14,position:'relative',overflow:'hidden'}}>
+                  <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${z.c}%`,background:bc(z.c),borderRadius:3}}/>
+                </div>
+                <div style={{fontSize:11,fontWeight:700,color:zc(z.c),minWidth:32,textAlign:'right'}}>{z.c}%</div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{flex:1,background:'#1a1a1a',borderRadius:3,height:14,position:'relative',overflow:'hidden'}}>
+                  <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${z.b}%`,background:bc(z.b),borderRadius:3}}/>
+                </div>
+                <div style={{fontSize:11,fontWeight:700,color:zc(z.b),minWidth:32,textAlign:'right'}}>{z.b}%</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+          <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8}}>COOPER MELVIN — QB1 NextGen Profile</div>
+            {[['timeToThrow','2.0s','#22c55e','IN RANGE ✓ (NFL: 2.36s)'],['airYards/play','13.2','#F0B429','ABOVE NFL AVG ✓ (8.0)'],['Comp %','84%','#22c55e','MATCHES PROJECTED'],['CPOE','+4%','#22c55e','OUTPERFORMS'],['Hash Accuracy','73%','#d97706','TARGET: 80%+'],['Deep Ball','88%','#22c55e','ELITE LEVEL ✓']].map(([l,v,vc,n])=>(
+              <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid #1d3a1d'}}>
+                <div style={{fontSize:8,color:'#9ca3af'}}>{l}</div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{fontSize:7,color:'#555'}}>{n}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:vc}}>{v}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:'#1a1000',border:'1px solid #F0B429',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8}}>BEN KOOI — QB2 NextGen Profile</div>
+            {[['timeToThrow','1.9s','#d97706','SLIGHTLY FAST (2.36s avg)'],['airYards/play','6.5','#dc2626','BELOW NFL AVG (8.0)'],['Comp %','70%','#d97706','BELOW PROJECTED'],['CPOE','-3%','#dc2626','UNDERPERFORMS'],['Hash Accuracy','60%','#dc2626','NEEDS WORK (71% avg)'],['Deep Ball','50%','#dc2626','BELOW NFL AVG (52%)']].map(([l,v,vc,n])=>(
+              <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid #2a1a00'}}>
+                <div style={{fontSize:8,color:'#9ca3af'}}>{l}</div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{fontSize:7,color:'#555'}}>{n}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:vc}}>{v}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{background:'#0a0a0a',border:'1px solid #303030',borderRadius:8,padding:14}}>
+          <div style={{fontSize:10,fontWeight:700,color:'#d4a017',letterSpacing:2,marginBottom:10}}>WHAT TO TRACK AT NEXT PRACTICE</div>
+          {[['#06b6d4','TRACK NOW','targetSeparation','Log each throw: OPEN (3+ yds), CONTESTED (1-2 yds), COVERED (0 yds). Grades QB decision quality.'],['#06b6d4','TRACK NOW','pressureAllowed','Mark each play: CLEAN POCKET or PRESSURE. Measures OL + QB response under pressure.'],['#22c55e','TRACK NOW','airYards per throw','Log each play as SHORT (<10), MID (10-20), or DEEP (20+). Builds full air yards profile.'],['#F0B429','TRACK NEXT','passerSpeed','Note QB runs: QB RUN, DESIGNED RUN, or SCRAMBLE. Builds rushing QB profile for recruiting.'],['#F0B429','TRACK NEXT','CPOE per session','Compare actual zone comp% to target. + means outperforming, - means underperforming.']].map(([clr,badge,metric,desc])=>(
+            <div key={metric} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid #1a1a1a',alignItems:'flex-start'}}>
+              <div style={{minWidth:72,background:clr+'22',border:`1px solid ${clr}`,borderRadius:4,padding:'3px 6px',fontSize:7,fontWeight:700,color:clr,textAlign:'center'}}>{badge}</div>
+              <div style={{minWidth:130,fontSize:8.5,fontWeight:700,color:clr}}>{metric}</div>
+              <div style={{fontSize:8,color:'#9ca3af',flex:1}}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
