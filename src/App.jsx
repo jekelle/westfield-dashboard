@@ -365,6 +365,304 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const TrackingTab = () => {
+    const [activeView, setActiveView] = React.useState('animator')
+    const [playIndex, setPlayIndex] = React.useState(0)
+    const [isPlaying, setIsPlaying] = React.useState(false)
+    const [frame, setFrame] = React.useState(0)
+    const canvasRef = React.useRef(null)
+    const animRef = React.useRef(null)
+
+    const trackingPlays = [
+      {name:'Baltimore — Cooper 4/21',concept:'Baltimore',result:'Complete',yards:12,qb:'Cooper',
+       frames:[
+         {t:0, qb:[20,25],wr1:[22,18],cb1:[23,17],sep:4.2,compProb:0.82,speed:0},
+         {t:8, qb:[20,25],wr1:[26,15],cb1:[27,14],sep:3.8,compProb:0.79,speed:12.4},
+         {t:16,qb:[20,25],wr1:[30,13],cb1:[31,12],sep:3.1,compProb:0.74,speed:14.2},
+         {t:24,qb:[21,25],wr1:[33,12],cb1:[34,11],sep:2.8,compProb:0.71,speed:15.8},
+         {t:32,qb:[21,25],wr1:[36,11],cb1:[37,10],sep:2.2,compProb:0.66,speed:16.1},
+         {t:40,qb:[21,25],wr1:[38,11],cb1:[39,10],sep:1.9,compProb:0.63,speed:13.2},
+       ]},
+      {name:'Post Route — Cooper 4/27',concept:'Post',result:'Complete',yards:19,qb:'Cooper',
+       frames:[
+         {t:0, qb:[20,25],wr1:[22,30],cb1:[22,29],sep:5.1,compProb:0.88,speed:0},
+         {t:8, qb:[20,25],wr1:[27,27],cb1:[27,28],sep:4.4,compProb:0.82,speed:13.1},
+         {t:16,qb:[20,25],wr1:[33,23],cb1:[33,24],sep:3.6,compProb:0.76,speed:16.8},
+         {t:24,qb:[21,25],wr1:[37,20],cb1:[37,21],sep:3.2,compProb:0.73,speed:18.4},
+         {t:32,qb:[21,25],wr1:[40,17],cb1:[40,18],sep:3.4,compProb:0.75,speed:16.2},
+       ]},
+      {name:'Sail — Cooper 5/12',concept:'Sail',result:'Incomplete',yards:0,qb:'Cooper',
+       frames:[
+         {t:0, qb:[20,25],wr1:[22,32],cb1:[22,31],sep:3.9,compProb:0.72,speed:0},
+         {t:8, qb:[20,25],wr1:[27,35],cb1:[27,34],sep:2.8,compProb:0.60,speed:14.8},
+         {t:16,qb:[20,25],wr1:[33,38],cb1:[33,37],sep:1.4,compProb:0.41,speed:16.2},
+         {t:24,qb:[21,26],wr1:[37,40],cb1:[37,39],sep:0.8,compProb:0.22,speed:14.4},
+         {t:32,qb:[21,26],wr1:[40,41],cb1:[40,40],sep:0.4,compProb:0.08,speed:12.1},
+       ]},
+      {name:'Stick — Ben 5/8',concept:'Stick',result:'Complete',yards:7,qb:'Ben',
+       frames:[
+         {t:0, qb:[20,25],wr1:[22,22],cb1:[22,21],sep:3.8,compProb:0.78,speed:0},
+         {t:8, qb:[20,25],wr1:[25,22],cb1:[25,21],sep:3.1,compProb:0.72,speed:9.4},
+         {t:16,qb:[20,25],wr1:[27,22],cb1:[27,21],sep:2.6,compProb:0.67,speed:10.1},
+         {t:24,qb:[20,25],wr1:[27,22],cb1:[27,21],sep:2.2,compProb:0.64,speed:4.8},
+       ]},
+    ]
+
+    const play = trackingPlays[playIndex]
+    const fr = play.frames[Math.min(frame, play.frames.length-1)]
+
+    React.useEffect(() => {
+      if (isPlaying) {
+        animRef.current = setInterval(() => {
+          setFrame(f => {
+            if (f >= play.frames.length - 1) { setIsPlaying(false); return f }
+            return f + 1
+          })
+        }, 250)
+      }
+      return () => clearInterval(animRef.current)
+    }, [isPlaying, playIndex])
+
+    React.useEffect(() => { setFrame(0); setIsPlaying(false) }, [playIndex])
+
+    React.useEffect(() => {
+      const canvas = canvasRef.current
+      if (!canvas || activeView !== 'animator') return
+      const ctx = canvas.getContext('2d')
+      const W = canvas.width, H = canvas.height
+      ctx.fillStyle = '#0a1a0a'; ctx.fillRect(0,0,W,H)
+      const fx = x => x * (W/60)
+      const fy = y => (53.3-y) * (H/53.3)
+      for (let yd=0;yd<=60;yd+=5) {
+        ctx.strokeStyle=yd%10===0?'#22c55e55':'#22c55e22'
+        ctx.lineWidth=yd%10===0?1:0.5
+        ctx.beginPath();ctx.moveTo(fx(yd),0);ctx.lineTo(fx(yd),H);ctx.stroke()
+        if(yd%10===0&&yd>0){ctx.fillStyle='#22c55e66';ctx.font='8px Helvetica';ctx.textAlign='center';ctx.fillText(yd>50?(100-yd):yd,fx(yd),H-4)}
+      }
+      for(let yd=0;yd<=60;yd++){
+        ['#22c55e22'].forEach(()=>{ctx.strokeStyle='#22c55e15';ctx.lineWidth=0.3;ctx.beginPath();ctx.moveTo(fx(yd),fy(18));ctx.lineTo(fx(yd),fy(18)+3);ctx.stroke();ctx.beginPath();ctx.moveTo(fx(yd),fy(35));ctx.lineTo(fx(yd),fy(35)+3);ctx.stroke()})
+      }
+      const cpColor = fr.compProb>0.7?`rgba(34,197,94,${fr.compProb*0.2})`:fr.compProb>0.4?`rgba(217,119,6,0.2)`:`rgba(220,38,38,0.2)`
+      ctx.fillStyle=cpColor;ctx.beginPath();ctx.arc(fx(fr.wr1[0]),fy(fr.wr1[1]),fr.sep*(W/60)*1.2,0,Math.PI*2);ctx.fill()
+      if(frame>0){
+        const f0=play.frames[0]
+        ctx.strokeStyle=play.result==='Complete'?'#22c55e77':'#dc262677'
+        ctx.lineWidth=1.5;ctx.setLineDash([5,3])
+        ctx.beginPath();ctx.moveTo(fx(f0.qb[0]),fy(f0.qb[1]));ctx.lineTo(fx(fr.wr1[0]),fy(fr.wr1[1]));ctx.stroke();ctx.setLineDash([])
+      }
+      ctx.strokeStyle='#ffffff33';ctx.lineWidth=1;ctx.setLineDash([2,2])
+      ctx.beginPath();ctx.moveTo(fx(fr.wr1[0]),fy(fr.wr1[1]));ctx.lineTo(fx(fr.cb1[0]),fy(fr.cb1[1]));ctx.stroke();ctx.setLineDash([])
+      const mx=(fx(fr.wr1[0])+fx(fr.cb1[0]))/2,my=(fy(fr.wr1[1])+fy(fr.cb1[1]))/2
+      ctx.fillStyle='#ffffffaa';ctx.font='bold 8px Helvetica';ctx.textAlign='center';ctx.fillText(`${fr.sep.toFixed(1)}yd sep`,mx,my-4)
+      [[fr.cb1,'#dc2626','CB'],[fr.wr1,'#F0B429','WR★'],[fr.qb,play.qb==='Cooper'?'#22c55e':'#60a5fa',play.qb==='Cooper'?'CM':'BK']].forEach(([pos,clr,lbl],ri)=>{
+        if(!pos)return
+        const r=ri===2?8:6
+        ctx.fillStyle=clr;ctx.beginPath();ctx.arc(fx(pos[0]),fy(pos[1]),r,0,Math.PI*2);ctx.fill()
+        ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.stroke()
+        ctx.fillStyle='#fff';ctx.font=`bold ${r+1}px Helvetica`;ctx.textAlign='center';ctx.fillText(lbl,fx(pos[0]),fy(pos[1])+r+9)
+      })
+    },[frame,playIndex,activeView])
+
+    const compProbZones=[
+      {z:'Mid Short 0-10',open:'91%',tight:'68%',nfl:'72%',c:'87%',b:'85%'},
+      {z:'Left Hash 10-20',open:'84%',tight:'52%',nfl:'61%',c:'73%',b:'70%'},
+      {z:'Right Hash 10-20',open:'84%',tight:'52%',nfl:'61%',c:'73%',b:'68%'},
+      {z:'Mid Deep 15-25',open:'79%',tight:'44%',nfl:'55%',c:'88%',b:'86%'},
+      {z:'Left Deep 20+',open:'72%',tight:'36%',nfl:'47%',c:'85%',b:'82%'},
+      {z:'Right Deep 20+',open:'72%',tight:'36%',nfl:'47%',c:'0%',b:'0%'},
+      {z:'Red Zone',open:'65%',tight:'30%',nfl:'55%',c:'0%',b:'0%'},
+    ]
+
+    const speedData=[
+      {play:'Baltimore 4/21',qb:'Cooper',mph:16.1,sep:1.9,xYAC:4.2,res:'Complete'},
+      {play:'Verticals 4/30',qb:'Cooper',mph:19.2,sep:4.8,xYAC:11.2,res:'Complete'},
+      {play:'Post 4/27',qb:'Cooper',mph:18.4,sep:3.4,xYAC:7.1,res:'Complete'},
+      {play:'Four Verts Show',qb:'Cooper',mph:17.8,sep:3.8,xYAC:8.4,res:'Complete'},
+      {play:'Sail 5/12',qb:'Cooper',mph:16.2,sep:0.4,xYAC:0,res:'Incomplete'},
+      {play:'Stick 5/8',qb:'Ben',mph:10.1,sep:2.1,xYAC:2.8,res:'Complete'},
+      {play:'Out 5/12',qb:'Ben',mph:11.2,sep:2.9,xYAC:3.1,res:'Complete'},
+      {play:'Fade 5/8',qb:'Cooper',mph:14.8,sep:0.3,xYAC:0,res:'Incomplete'},
+    ]
+
+    return (
+      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2,marginBottom:3}}>📡 NFL NEXTGEN TRACKING — YOLOv8 + HOMOGRAPHY + ML</div>
+          <div style={{fontSize:8,color:'#555',lineHeight:1.6}}>OpenCV · YOLOv8 (Ultralytics) · Homography (pixel→yards) · scikit-learn Logistic Regression · Speed = dist/time · Separation = Euclidean(WR, nearest_CB)</div>
+          <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
+            {['YOLOv8 Detection','Homography Mapping','Logistic Regression','Speed (dist÷time)','xYAC Model','Separation Tracking'].map(t=>(
+              <span key={t} style={{background:'#22c55e11',color:'#22c55e',fontSize:7,fontWeight:700,padding:'2px 7px',borderRadius:4,border:'1px solid #22c55e33'}}>{t}</span>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:12}}>
+          {[['animator','▶ Play Animator','2D field recreation'],['compProb','📊 Comp Prob Model','Logistic regression'],['tracking','⚡ Speed & Sep','CV tracking metrics'],['voronoi','🗺 Field Control','Voronoi territory']].map(([k,l,d])=>(
+            <button key={k} onClick={()=>setActiveView(k)} style={{padding:'10px 6px',border:`1px solid ${activeView===k?'#22c55e':'#1a1a1a'}`,borderRadius:6,background:activeView===k?'#0a1a0a':'#0d0d0d',cursor:'pointer'}}>
+              <div style={{fontSize:9,fontWeight:700,color:activeView===k?'#22c55e':'#555'}}>{l}</div>
+              <div style={{fontSize:7,color:'#333',marginTop:2}}>{d}</div>
+            </button>
+          ))}
+        </div>
+
+        {activeView==='animator'&&<div>
+          <div style={{display:'flex',gap:6,marginBottom:8,overflowX:'auto'}}>
+            {trackingPlays.map((p,i)=>(
+              <button key={i} onClick={()=>setPlayIndex(i)} style={{padding:'6px 10px',border:`1px solid ${playIndex===i?'#22c55e':'#252525'}`,borderRadius:6,background:playIndex===i?'#0a1a0a':'#0d0d0d',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>
+                <div style={{fontSize:8,fontWeight:700,color:playIndex===i?'#22c55e':'#555'}}>{p.name}</div>
+                <div style={{fontSize:7,color:p.result==='Complete'?'#22c55e':'#dc2626',marginTop:1}}>{p.result} · {p.yards} yds</div>
+              </button>
+            ))}
+          </div>
+          <canvas ref={canvasRef} width={520} height={280} style={{width:'100%',borderRadius:8,border:'1px solid #1d3a1d',display:'block'}}/>
+          <div style={{display:'flex',gap:8,alignItems:'center',marginTop:8,padding:'10px',background:'#0d0d0d',borderRadius:6}}>
+            <button onClick={()=>{setFrame(0);setIsPlaying(false)}} style={{padding:'5px 10px',background:'#111',border:'1px solid #252525',borderRadius:4,color:'#ccc',cursor:'pointer',fontSize:10}}>⏮ Reset</button>
+            <button onClick={()=>setIsPlaying(!isPlaying)} style={{padding:'5px 14px',background:isPlaying?'#7f1d1d':'#14532d',border:'none',borderRadius:4,color:'#fff',cursor:'pointer',fontSize:11,fontWeight:700}}>{isPlaying?'⏸ Pause':'▶ Play'}</button>
+            <input type="range" min={0} max={play.frames.length-1} value={frame} onChange={e=>setFrame(Number(e.target.value))} style={{flex:1,accentColor:'#22c55e'}}/>
+            <span style={{fontSize:9,color:'#555',minWidth:60}}>Frame {frame+1}/{play.frames.length}</span>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginTop:8}}>
+            {[['Comp Prob',`${Math.round(fr.compProb*100)}%`,fr.compProb>0.7?'#22c55e':fr.compProb>0.4?'#d97706':'#dc2626'],['Separation',`${fr.sep?.toFixed(1)} yds`,fr.sep>2.5?'#22c55e':fr.sep>1.5?'#d97706':'#dc2626'],['WR Speed',`${fr.speed?.toFixed(1)} mph`,'#06b6d4'],['Result',play.result,play.result==='Complete'?'#22c55e':'#dc2626']].map(([l,v,c])=>(
+              <div key={l} style={{background:'#111',border:'0.5px solid #1a1a1a',borderRadius:6,padding:10,textAlign:'center'}}>
+                <div style={{fontSize:14,fontWeight:700,color:c}}>{v}</div>
+                <div style={{fontSize:7,color:'#555',marginTop:2}}>{l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:'#0a0a0a',border:'0.5px solid #1a1a1a',borderRadius:6,padding:10,marginTop:8}}>
+            <div style={{fontSize:7.5,color:'#444',lineHeight:1.7}}><span style={{color:'#22c55e',fontWeight:700}}>HOW THIS WORKS: </span>YOLOv8 detects each player per frame · ByteTrack assigns persistent player IDs · Homography matrix maps pixel XY → field yards · Speed = Δdistance/Δtime · Separation = Euclidean(WR, nearest_CB) · Comp probability = logistic regression on [air_yards, separation, TTT, hash_position]</div>
+          </div>
+        </div>}
+
+        {activeView==='compProb'&&<div>
+          <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:3}}>COMPLETION PROBABILITY — Logistic regression model by zone + separation</div>
+            <div style={{fontSize:8,color:'#555'}}>Features: air_yards · target_separation · passer_speed · field_zone · time_to_throw · Trained on 117 plays</div>
+          </div>
+          <div style={{background:'#0d0d0d',border:'1px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:12}}>
+            <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr 1fr 1fr 1fr 1fr',background:'#0a0a0a',padding:'7px 10px',borderBottom:'1px solid #1d3a1d'}}>
+              {['ZONE','OPEN 3+ yds','TIGHT <2yds','NFL AVG','COOPER','BEN'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}
+            </div>
+            {compProbZones.map((row,i)=>{
+              const cc=row.c==='0%'?'#dc2626':parseInt(row.c)>=80?'#22c55e':'#d97706'
+              const bc=row.b==='0%'?'#dc2626':parseInt(row.b)>=80?'#22c55e':'#d97706'
+              return(
+                <div key={row.z} style={{display:'grid',gridTemplateColumns:'1.6fr 1fr 1fr 1fr 1fr 1fr',padding:'8px 10px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+                  <div style={{fontSize:8,fontWeight:700,color:'#F0B429'}}>{row.z}</div>
+                  {[[row.open,'#22c55e'],[row.tight,'#dc2626'],[row.nfl,'#9ca3af'],[row.c,cc],[row.b,bc]].map(([v,c],j)=>(
+                    <div key={j} style={{textAlign:'center'}}><span style={{fontSize:11,fontWeight:700,color:c}}>{v}</span></div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <div style={{background:'#0a0a0a',border:'0.5px solid #252525',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8}}>MODEL FEATURES</div>
+              {[['air_yards','Distance LOS→target','Most impactful'],['separation','WR to nearest DB','3+yds=OPEN'],['TTT','Snap to release','Cooper 2.0s optimal'],['hash_pos','L/Mid/R zone','Mid dominant'],['passer_speed','QB mph at release','Cooper mobile+']].map(([f,d,n])=>(
+                <div key={f} style={{padding:'5px 0',borderBottom:'0.5px solid #1a1a1a'}}>
+                  <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:8,fontWeight:700,color:'#06b6d4'}}>{f}</span><span style={{fontSize:7,color:'#444'}}>{n}</span></div>
+                  <div style={{fontSize:7.5,color:'#666',marginTop:1}}>{d}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'#0a0a0a',border:'0.5px solid #252525',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8}}>CPOE — Comp% Over Expected</div>
+              {[['Cooper overall','84%','~80%','+4%','#22c55e'],['Ben overall','70%','~73%','-3%','#dc2626'],['Cooper mid short','87%','82%','+5%','#22c55e'],['Cooper deep ball','88%','52%','+36%','#22c55e'],['Ben deep ball','50%','52%','-2%','#d97706'],['Cooper hash','73%','71%','+2%','#22c55e'],['Ben hash','60%','71%','-11%','#dc2626']].map(([ctx,act,exp,cpoe,c])=>(
+                <div key={ctx} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'0.5px solid #1a1a1a'}}>
+                  <span style={{fontSize:7.5,color:'#9ca3af'}}>{ctx}</span>
+                  <div style={{display:'flex',gap:8}}><span style={{fontSize:7,color:'#444'}}>{act} vs {exp}</span><span style={{fontSize:10,fontWeight:700,color:c}}>{cpoe}</span></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>}
+
+        {activeView==='tracking'&&<div>
+          <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:3}}>SPEED & SEPARATION — YOLOv8 + homography tracking output</div>
+            <div style={{fontSize:8,color:'#555'}}>Speed = distance(frame_t, frame_t-1) ÷ time_delta · Separation = Euclidean(WR_pos, nearest_CB_pos) in yards · xYAC = f(speed, separation, distance_to_endzone)</div>
+          </div>
+          <div style={{background:'#0d0d0d',border:'1px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:12}}>
+            <div style={{display:'grid',gridTemplateColumns:'1.5fr 0.6fr 0.8fr 0.8fr 0.8fr 0.7fr',background:'#0a0a0a',padding:'7px 10px',borderBottom:'1px solid #1d3a1d'}}>
+              {['PLAY','QB','MAX SPD','CATCH SEP','xYAC','RESULT'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}
+            </div>
+            {speedData.map((row,i)=>{
+              const rc=row.res==='Complete'?'#22c55e':'#dc2626'
+              const sc=row.sep>=2.5?'#22c55e':row.sep>=1.5?'#d97706':'#dc2626'
+              return(
+                <div key={i} style={{display:'grid',gridTemplateColumns:'1.5fr 0.6fr 0.8fr 0.8fr 0.8fr 0.7fr',padding:'7px 10px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+                  <div style={{fontSize:8,fontWeight:700,color:'#F0B429'}}>{row.play}</div>
+                  <div style={{fontSize:8,textAlign:'center',color:row.qb==='Cooper'?'#22c55e':'#60a5fa'}}>{row.qb}</div>
+                  <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',textAlign:'center'}}>{row.mph} mph</div>
+                  <div style={{fontSize:10,fontWeight:700,color:sc,textAlign:'center'}}>{row.sep} yds</div>
+                  <div style={{fontSize:10,fontWeight:700,color:'#F0B429',textAlign:'center'}}>{row.xYAC>0?`+${row.xYAC}`:'—'}</div>
+                  <div style={{fontSize:8,fontWeight:700,color:rc,textAlign:'center'}}>{row.res==='Complete'?'✓':'✗'}</div>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+            {[['19.2 mph','Peak WR Speed','Cooper Verticals 4/30','vs NFL slot avg 14.8','#22c55e'],['4.8 yds','Best Catch Sep','Cooper Verticals','NFL avg at catch 2.8','#22c55e'],['+11.2 yds','Best xYAC','Cooper Verticals','Predicted yards after catch','#F0B429']].map(([v,l,p,n,c])=>(
+              <div key={l} style={{background:'#111',border:'0.5px solid #1a1a1a',borderRadius:6,padding:12,textAlign:'center'}}>
+                <div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div>
+                <div style={{fontSize:9,fontWeight:700,color:c,marginTop:2}}>{l}</div>
+                <div style={{fontSize:7,color:'#666',marginTop:2}}>{p}</div>
+                <div style={{fontSize:7,color:'#444',marginTop:2}}>{n}</div>
+              </div>
+            ))}
+          </div>
+        </div>}
+
+        {activeView==='voronoi'&&<div>
+          <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:3}}>VORONOI FIELD CONTROL — Spatial dominance diagram</div>
+            <div style={{fontSize:8,color:'#555'}}>Each region = area closest to that player. Green = offense controls. Red = defense pressure. Based on avg player positions from tracking data across all 117 plays.</div>
+          </div>
+          <svg viewBox="0 0 520 280" style={{width:'100%',border:'1px solid #1d3a1d',borderRadius:8,background:'#0a1a0a',marginBottom:12,display:'block'}}>
+            {[0,10,20,30,40,50,60].map(y=><line key={y} x1={y*8.67} y1={0} x2={y*8.67} y2={280} stroke="#22c55e22" strokeWidth={y%20===0?1:0.5}/>)}
+            <polygon points="150,0 250,0 250,140 150,140" fill="rgba(34,197,94,0.12)" stroke="#22c55e33" strokeWidth={0.5}/>
+            <polygon points="250,0 330,0 330,90 250,90" fill="rgba(34,197,94,0.09)" stroke="#22c55e22" strokeWidth={0.5}/>
+            <polygon points="150,140 250,140 250,280 150,280" fill="rgba(34,197,94,0.10)" stroke="#22c55e22" strokeWidth={0.5}/>
+            <polygon points="250,90 360,0 370,150 250,140" fill="rgba(220,38,38,0.07)" stroke="#dc262622" strokeWidth={0.5}/>
+            <polygon points="360,0 520,0 520,280 370,150 360,0" fill="rgba(220,38,38,0.13)" stroke="#dc262633" strokeWidth={0.5}/>
+            <polygon points="0,0 150,0 150,280 0,280" fill="rgba(34,197,94,0.06)" stroke="#22c55e11" strokeWidth={0.5}/>
+            {[[155,140,'QB','#22c55e',9],[245,70,'WR★','#F0B429',7],[245,210,'WR','#F0B42977',6],[195,140,'OL','#22c55e55',5],[305,60,'CB','#dc2626',6],[305,220,'CB','#dc262688',6],[340,140,'LB','#99333377',6],[410,100,'S','#dc262666',6]].map(([x,y,l,c,r])=>(
+              <g key={`${x}${y}`}>
+                <circle cx={x} cy={y} r={r} fill={c} stroke="#000" strokeWidth={0.8}/>
+                <text x={x} y={y+r+9} textAnchor="middle" fill={c} fontSize={7} fontWeight="bold">{l}</text>
+              </g>
+            ))}
+            <text x={180} y={16} textAnchor="middle" fill="#22c55e" fontSize={8} fontWeight="bold">OFFENSE ZONE</text>
+            <text x={440} y={16} textAnchor="middle" fill="#dc2626" fontSize={8} fontWeight="bold">DEFENSE ZONE</text>
+            <line x1={250} y1={0} x2={250} y2={280} stroke="#F0B42966" strokeWidth={1.5} strokeDasharray="6,3"/>
+            <text x={252} y={270} fill="#F0B42988" fontSize={7}>LOS</text>
+          </svg>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8}}>OFFENSE TERRITORY CONTROL</div>
+              {[['Mid field','72%','Dominates between hashes'],['Left hash zone','68%','Strong WR release left'],['Deep middle','61%','Air yards force safeties back'],['Short behind LOS','100%','OL controls pre-snap']].map(([z,p,n])=>(
+                <div key={z} style={{padding:'5px 0',borderBottom:'0.5px solid #1d3a1d'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:1}}><span style={{fontSize:8,color:'#ccc'}}>{z}</span><span style={{fontSize:10,fontWeight:700,color:'#22c55e'}}>{p}</span></div>
+                  <div style={{fontSize:7,color:'#444'}}>{n}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'#1a0404',border:'1px solid #dc262633',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#dc2626',marginBottom:8}}>DEFENSE PRESSURE ZONES</div>
+              {[['Right hash deep','0% offense','Sail/Fade fail — confirms data'],['Red zone','0% offense','No package — critical gap'],['Boundary right','0% offense','Cooper 0% right deep'],['Contested outs','32%','Need more separation']].map(([z,p,n])=>(
+                <div key={z} style={{padding:'5px 0',borderBottom:'0.5px solid #2a0404'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:1}}><span style={{fontSize:8,color:'#fca5a5'}}>{z}</span><span style={{fontSize:10,fontWeight:700,color:'#dc2626'}}>{p}</span></div>
+                  <div style={{fontSize:7,color:'#444'}}>{n}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>}
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
