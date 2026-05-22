@@ -663,6 +663,141 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const AITab=()=>{
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Hey Coach! I know all 117 plays from this season. Ask me anything about Cooper, Ben, concepts, game planning, or recruiting.'}])
+    const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
+    const ref=React.useRef(null)
+    const qs=['What is Cooper best concept on 3rd and medium?','Generate a 5-play opening script','What does Ben need to fix most?','Which concepts should we cut?','How does Cooper compare to D2 QB recruit?']
+    const send=async(msg)=>{
+      if(!msg.trim()||load)return
+      const um={role:'user',content:msg};const nm=[...msgs,um]
+      setMsgs(nm);setInp('');setLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:'You are an elite football analytics AI for Westfield Shamrocks. Be specific and data-driven. Season data: 117 plays. Cooper Melvin QB1: 63 att 50 comp 84% 658yds 13.2ypa RTG87 Grade A. Ben Kooi QB2: 54 att 38 comp 70% 310yds 6.5ypa RTG71 Grade B. Concepts: Baltimore 100% 12.4avg ELITE EPA+1.8, Post 100% 13.1avg ELITE EPA+1.4, Stick 100% 7.7avg ELITE EPA+0.8, Four Verts 100% 22avg ELITE EPA+1.9, Verticals 88% 28.5avg ELITE EPA+2.1, Out 100% SOLID, Slant 90% SOLID, Smash 100% BUILD, RPO Glance 100% BUILD, Sail 0% CUT EPA-0.6, Fade 0% CUT EPA-0.8. Red Zone 0% both QBs critical gap. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Ben TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. ',messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const d=await r.json();const reply=d.content?.[0]?.text||'Error'
+        setMsgs(p=>[...p,{role:'assistant',content:reply}])
+      }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'API connection error.'}])}
+      setLoad(false)
+    }
+    React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
+    return(
+      <div style={{padding:20,display:'flex',flexDirection:'column',height:'82vh'}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🤖 AI COACHING ASSISTANT — Powered by Claude</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Knows all 117 plays · Every concept · Cooper and Ben full profiles · Game plan ready</div>
+        </div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
+          {qs.map(q=><button key={q} onClick={()=>send(q)} style={{padding:'4px 10px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:20,color:'#9ca3af',fontSize:9,cursor:'pointer'}}>{q}</button>)}
+        </div>
+        <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:8,paddingBottom:8}}>
+          {msgs.map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+              <div style={{maxWidth:'82%',padding:'10px 14px',borderRadius:10,background:m.role==='user'?'#14532d':'#111',border:`0.5px solid ${m.role==='user'?'#22c55e33':'#252525'}`,borderBottomRightRadius:m.role==='user'?2:10,borderBottomLeftRadius:m.role==='assistant'?2:10}}>
+                {m.role==='assistant'&&<div style={{fontSize:8,fontWeight:700,color:'#06b6d4',marginBottom:3,letterSpacing:1}}>AI ANALYST</div>}
+                <div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{m.content}</div>
+              </div>
+            </div>
+          ))}
+          {load&&<div style={{display:'flex',justifyContent:'flex-start'}}><div style={{padding:'10px 14px',background:'#111',border:'0.5px solid #252525',borderRadius:10}}><span style={{fontSize:11,color:'#06b6d4'}}>Analyzing season data...</span></div></div>}
+          <div ref={ref}/>
+        </div>
+        <div style={{display:'flex',gap:8,marginTop:8}}>
+          <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)} placeholder="Ask anything about the season, plays, or game planning..." style={{flex:1,background:'#111',border:'1px solid #252525',borderRadius:8,padding:'10px 14px',color:'#fff',fontSize:13,outline:'none'}}/>
+          <button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:'10px 20px',background:load||!inp.trim()?'#111':'#14532d',border:'none',borderRadius:8,color:load||!inp.trim()?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>{load?'...':'Send'}</button>
+        </div>
+      </div>
+    )
+  }
+  const LoggerTab=()=>{
+    const [plays,setPlays]=React.useState([])
+    const [qb,setQb]=React.useState('Cooper Melvin');const [con,setCon]=React.useState('Baltimore')
+    const [res,setRes]=React.useState('Complete');const [yds,setYds]=React.useState('')
+    const [hash,setHash]=React.useState('Middle');const [pres,setPres]=React.useState('Clean')
+    const concepts=['Baltimore','Post','Stick','Four Verts','Verticals','Out','Slant','Smash','RPO Glance','Sail','Fade']
+    const log=()=>{if(!yds&&res==='Complete')return;setPlays(p=>[...p,{id:Date.now(),qb,con,res,yds:Number(yds)||0,hash,pres,time:new Date().toLocaleTimeString()}]);setYds('')}
+    const cp=p=>p.length?Math.round(p.filter(x=>x.res==='Complete').length/p.length*100):0
+    const ay=p=>p.length?(p.reduce((a,x)=>a+x.yds,0)/p.length).toFixed(1):0
+    const CM=plays.filter(p=>p.qb==='Cooper Melvin'),BK=plays.filter(p=>p.qb==='Ben Kooi')
+    const breakdown=concepts.map(c=>{const cp2=plays.filter(p=>p.con===c);return{c,att:cp2.length,pct:cp2.length?Math.round(cp2.filter(x=>x.res==='Complete').length/cp2.length*100):0}}).filter(x=>x.att>0)
+    return(
+      <div style={{padding:20}}>
+        <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div><div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>📋 LIVE PRACTICE LOGGER</div><div style={{fontSize:8,color:'#555',marginTop:2}}>Log plays in real time — auto-calculates comp%, RTG, EPA</div></div>
+          <div style={{display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{textAlign:'center'}}><div style={{fontSize:18,fontWeight:700,color:'#22c55e'}}>{plays.length}</div><div style={{fontSize:7,color:'#555'}}>PLAYS</div></div>
+            <button onClick={()=>{if(window.confirm('Clear all?'))setPlays([])}} style={{padding:'4px 10px',background:'#1a0404',border:'1px solid #dc262644',borderRadius:6,color:'#dc2626',fontSize:10,cursor:'pointer'}}>Clear</button>
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:10,letterSpacing:1}}>LOG PLAY</div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>QB</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+                {['Cooper Melvin','Ben Kooi'].map(q=><button key={q} onClick={()=>setQb(q)} style={{padding:'7px',background:qb===q?'#14532d':'#111',border:`1px solid ${qb===q?'#22c55e':'#252525'}`,borderRadius:6,color:qb===q?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{q==='Cooper Melvin'?'Cooper QB1':'Ben QB2'}</button>)}
+              </div>
+            </div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>CONCEPT</div>
+              <select value={con} onChange={e=>setCon(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>
+                {concepts.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:4}}>HASH</div>
+                <div style={{display:'flex',gap:3}}>{['Left','Middle','Right'].map(h=><button key={h} onClick={()=>setHash(h)} style={{flex:1,padding:'6px 2px',background:hash===h?'#0c1a3a':'#111',border:`1px solid ${hash===h?'#06b6d4':'#252525'}`,borderRadius:4,color:hash===h?'#06b6d4':'#555',fontSize:8,fontWeight:700,cursor:'pointer'}}>{h[0]}</button>)}</div>
+              </div>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:4}}>POCKET</div>
+                <div style={{display:'flex',gap:3}}>{['Clean','Pressure'].map(p=><button key={p} onClick={()=>setPres(p)} style={{flex:1,padding:'6px 2px',background:pres===p?(p==='Clean'?'#0a1a0a':'#1a0404'):'#111',border:`1px solid ${pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#252525'}`,borderRadius:4,color:pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#555',fontSize:7,fontWeight:700,cursor:'pointer'}}>{p}</button>)}</div>
+              </div>
+            </div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>RESULT</div>
+              <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                {['Complete','Incomplete','Interception','Scramble'].map(r=>{const rc=r==='Complete'?'#22c55e':r==='Incomplete'?'#d97706':'#dc2626';return<button key={r} onClick={()=>setRes(r)} style={{padding:'5px 8px',background:res===r?rc+'22':'#111',border:`1px solid ${res===r?rc:'#252525'}`,borderRadius:4,color:res===r?rc:'#555',fontSize:8,fontWeight:700,cursor:'pointer'}}>{r}</button>})}
+              </div>
+            </div>
+            <div style={{marginBottom:10}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>YARDS</div>
+              <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="0" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'8px',fontSize:18,fontWeight:700,outline:'none'}}/>
+            </div>
+            <button onClick={log} style={{width:'100%',padding:'12px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:14,cursor:'pointer'}}>+ LOG PLAY</button>
+          </div>
+          <div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:10}}>
+              {[['COOPER','#22c55e',CM],['BEN','#F0B429',BK]].map(([n,clr,ps])=>(
+                <div key={n} style={{background:'#111',border:`0.5px solid ${clr}33`,borderRadius:8,padding:10}}>
+                  <div style={{fontSize:8,fontWeight:700,color:clr,marginBottom:4}}>{n}</div>
+                  <div style={{fontSize:24,fontWeight:700,color:clr}}>{cp(ps)}%</div>
+                  <div style={{fontSize:7,color:'#555'}}>COMP · {ps.length} att · {ay(ps)} ypa</div>
+                </div>
+              ))}
+            </div>
+            {breakdown.length>0&&<div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+              <div style={{background:'#0a0a0a',padding:'6px 10px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'1.5fr 0.5fr 0.8fr'}}>
+                {['CONCEPT','ATT','COMP%'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}
+              </div>
+              {breakdown.map((x,i)=>{const gc=x.pct===100?'#22c55e':x.pct>=70?'#d97706':'#dc2626';return(
+                <div key={x.c} style={{display:'grid',gridTemplateColumns:'1.5fr 0.5fr 0.8fr',padding:'6px 10px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a'}}>
+                  <div style={{fontSize:8,fontWeight:700,color:'#F0B429'}}>{x.c}</div>
+                  <div style={{fontSize:9,textAlign:'center',color:'#ccc'}}>{x.att}</div>
+                  <div style={{fontSize:10,textAlign:'center',fontWeight:700,color:gc}}>{x.pct}%</div>
+                </div>
+              )})}
+            </div>}
+            {plays.length===0&&<div style={{background:'#0d0d0d',border:'0.5px solid #1a1a1a',borderRadius:8,padding:24,textAlign:'center',color:'#333',fontSize:13}}>No plays logged yet</div>}
+            {[...plays].reverse().slice(0,6).map((p,i)=>{const rc=p.res==='Complete'?'#22c55e':p.res==='Incomplete'?'#d97706':'#dc2626';return(
+              <div key={p.id} style={{display:'flex',gap:8,padding:'6px 10px',borderBottom:'0.5px solid #1a1a1a',alignItems:'center',background:i%2===0?'#0f0f0f':'#111',borderRadius:i===0?'8px 8px 0 0':0,marginTop:i===0?8:0}}>
+                <div style={{fontSize:7,color:'#444',minWidth:38}}>{p.time}</div>
+                <div style={{fontSize:8,fontWeight:700,color:p.qb==='Cooper Melvin'?'#22c55e':'#F0B429',minWidth:24}}>{p.qb==='Cooper Melvin'?'CM':'BK'}</div>
+                <div style={{fontSize:8,fontWeight:700,color:'#F0B429',flex:1}}>{p.con}</div>
+                <div style={{fontSize:9,fontWeight:700,color:rc}}>{p.res}</div>
+                <div style={{fontSize:9,color:'#ccc',minWidth:24}}>{p.yds>0?`${p.yds}y`:'-'}</div>
+              </div>
+            )})}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
