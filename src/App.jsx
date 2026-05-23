@@ -1711,6 +1711,283 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const CoachingStaffTab=()=>{
+    const [selected,setSelected]=React.useState([])
+    const [subject,setSubject]=React.useState('')
+    const [body,setBody]=React.useState('')
+    const [load,setLoad]=React.useState(false)
+    const [composed,setComposed]=React.useState(false)
+    const [filter,setFilter]=React.useState('All')
+    const coaches=[
+      {id:'matt',name:'Coach Matt',role:'Head Coach',unit:'Offense',email:'mattmolly@me.com',init:'CM',col:'#22c55e',note:'Primary contact. Runs all offensive concepts. Reviews QB data weekly.'},
+      {id:'oc',name:'OC Coach',role:'Offensive Coordinator',unit:'Offense',email:'',init:'OC',col:'#22c55e',note:'Play caller. Needs EPA breakdown and concept grades every session.'},
+      {id:'qb',name:'QB Coach',role:'Quarterback Coach',unit:'Offense',email:'',init:'QB',col:'#22c55e',note:'Works with Cooper and Ben. Needs TTT, release, and hash data.'},
+      {id:'wr',name:'WR Coach',role:'Wide Receiver Coach',unit:'Offense',email:'',init:'WR',col:'#F0B429',note:'Needs separation data, route success rates, target breakdown.'},
+      {id:'rb',name:'RB Coach',role:'Running Back Coach',unit:'Offense',email:'',init:'RB',col:'#F0B429',note:'RPO and screen data. Cooper QB run tracking from 5/12.'},
+      {id:'ol',name:'OL Coach',role:'Offensive Line Coach',unit:'Offense',email:'',init:'OL',col:'#d97706',note:'Pressure rate data. Clean pocket vs pressure on every play.'},
+      {id:'hc',name:'Head Coach',role:'Head Coach / DC',unit:'Defense',email:'',init:'HC',col:'#dc2626',note:'Big picture. Needs full weekly summary — both sides of ball.'},
+      {id:'dc',name:'DC Coach',role:'Defensive Coordinator',unit:'Defense',email:'',init:'DC',col:'#dc2626',note:'Coverage calls, opponent tendency, red zone defense data.'},
+      {id:'lb',name:'LB Coach',role:'Linebacker Coach',unit:'Defense',email:'',init:'LB',col:'#dc2626',note:'Spy packages, blitz pickups, coverage assignments.'},
+      {id:'db',name:'DB Coach',role:'DB / Secondary Coach',unit:'Defense',email:'',init:'DB',col:'#dc2626',note:'Separation allowed, coverage breakdowns, man vs zone data.'},
+      {id:'dl',name:'DL Coach',role:'D-Line Coach',unit:'Defense',email:'',init:'DL',col:'#7c3aed',note:'Pressure rate, sack opportunities, run gap assignments.'},
+      {id:'st',name:'ST Coach',role:'Special Teams Coach',unit:'Special',email:'',init:'ST',col:'#a78bfa',note:'Punt/kick decisions, return setups, onside situations.'},
+      {id:'sc',name:'Strength Coach',role:'Strength and Conditioning',unit:'Staff',email:'',init:'SC',col:'#06b6d4',note:'Workload data, speed tracking, physical development metrics.'},
+      {id:'fa',name:'Analytics Staff',role:'Film and Analytics',unit:'Staff',email:'mattmolly@me.com',init:'FA',col:'#06b6d4',note:'This dashboard. Film notes. Weekly analytics summary.'},
+    ]
+    const units=['All','Offense','Defense','Special','Staff']
+    const filtered=filter==='All'?coaches:coaches.filter(x=>x.unit===filter)
+    const toggleCoach=id=>setSelected(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
+    const selCoaches=coaches.filter(x=>selected.includes(x.id))
+    const emailList=selCoaches.map(x=>x.email).filter(Boolean).join(', ')
+    const genEmail=async(type)=>{
+      setLoad(true)
+      const ps={
+        weekly:'Write a professional weekly analytics email for Westfield Shamrocks coaching staff. Cover: 5/12 session (Cooper 75% 12att, Ben 55% 11att), top concepts (Baltimore 100% Post 100% Stick 100%), cut immediately (Sail 0% Fade 0%), critical gap (red zone 0% both QBs), and one action item for next practice. Sign off as Westfield Analytics Staff.',
+        gameplan:'Write a pre-game coaching staff email with game plan priorities for Westfield Shamrocks. Include: opening script (Baltimore, Post, Stick), key matchup to exploit, what to avoid (Sail Fade red zone), Cooper spotlight plays for scouts, and Ben package plays.',
+        showcase:'Write an email preparing coaching staff for a College Showcase. Cover: Cooper stats (84% comp RTG87 13.2ypa deep ball 88% vs NFL 52%), how to introduce him to college coaches, which plays highlight his strengths, and key talking points about his upside and projection.',
+        halftime:'Write a quick halftime adjustment memo for coaching staff. What is working (keep calling), what is not (stop calling), and one key adjustment per unit. Short and direct — 2 minutes to read.'
+      }
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:550,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails for coaching staff based on real season data.',messages:[{role:'user',content:ps[type]}]})})
+        const d=await r.json()
+        const text=d.content?.[0]?.text||'Error'
+        const lines=text.split('\n')
+        setSubject(lines[0].replace(/^Subject:\s*/i,'').replace(/\*\*/g,'').trim()||'Westfield Shamrocks Analytics Report')
+        setBody(lines.slice(1).join('\n').trim()||text)
+        setComposed(true)
+      }catch(e){setBody('Connection error.')}
+      setLoad(false)
+    }
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>👥 COACHING STAFF DIRECTORY — Select and Email Any Group</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Select coaches · AI generates the email · Open in Mail · Keep every coach informed every week</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1.1fr 1fr',gap:12}}>
+          <div>
+            <div style={{display:'flex',gap:5,marginBottom:10,flexWrap:'wrap',alignItems:'center'}}>
+              {units.map(u=><button key={u} onClick={()=>setFilter(u)} style={{padding:'5px 10px',background:filter===u?'#14532d':'#0d0d0d',border:`0.5px solid ${filter===u?'#22c55e':'#252525'}`,borderRadius:14,color:filter===u?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{u}</button>)}
+              <div style={{marginLeft:'auto',display:'flex',gap:4}}>
+                <button onClick={()=>setSelected(filtered.map(x=>x.id))} style={{padding:'4px 8px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:6,color:'#9ca3af',fontSize:8,cursor:'pointer'}}>All</button>
+                <button onClick={()=>setSelected([])} style={{padding:'4px 8px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:6,color:'#9ca3af',fontSize:8,cursor:'pointer'}}>Clear</button>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              {filtered.map(coach=>(
+                <div key={coach.id} onClick={()=>toggleCoach(coach.id)} style={{display:'flex',gap:10,padding:'10px 12px',background:selected.includes(coach.id)?coach.col+'11':'#0d0d0d',border:`0.5px solid ${selected.includes(coach.id)?coach.col:'#252525'}`,borderRadius:8,cursor:'pointer',alignItems:'center'}}>
+                  <div style={{width:36,height:36,borderRadius:8,background:coach.col+'22',border:`1px solid ${coach.col}44`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:coach.col,flexShrink:0}}>{coach.init}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:12,fontWeight:700,color:selected.includes(coach.id)?coach.col:'#ccc'}}>{coach.name}</span>
+                      <span style={{fontSize:8,color:coach.col,background:coach.col+'11',padding:'1px 6px',borderRadius:4,flexShrink:0,marginLeft:6}}>{coach.unit}</span>
+                    </div>
+                    <div style={{fontSize:9,color:'#555',marginTop:1}}>{coach.role}</div>
+                    <div style={{fontSize:8,color:coach.email?'#06b6d4':'#333',marginTop:1}}>{coach.email||'No email yet — add below'}</div>
+                    <div style={{fontSize:7,color:'#333',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{coach.note}</div>
+                  </div>
+                  <div style={{width:18,height:18,borderRadius:4,border:`1.5px solid ${selected.includes(coach.id)?coach.col:'#333'}`,background:selected.includes(coach.id)?coach.col:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    {selected.includes(coach.id)&&<span style={{color:'#000',fontSize:11,fontWeight:700}}>✓</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:6,letterSpacing:1}}>SELECTED: {selected.length} coaches</div>
+              {selCoaches.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>{selCoaches.map(x=><span key={x.id} style={{background:x.col+'22',color:x.col,fontSize:8,fontWeight:700,padding:'2px 7px',borderRadius:4,border:`0.5px solid ${x.col}33`}}>{x.name}</span>)}</div>}
+              {emailList&&<div style={{background:'#111',borderRadius:6,padding:8,marginBottom:4}}><div style={{fontSize:7,color:'#555',marginBottom:2}}>EMAIL LIST</div><div style={{fontSize:10,color:'#06b6d4',wordBreak:'break-all',lineHeight:1.5}}>{emailList}</div></div>}
+              <div style={{fontSize:8,color:'#444',marginTop:4}}>Tap a coach card to select · Add emails by editing the coaches array in the code</div>
+            </div>
+            <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8,letterSpacing:1}}>AI GENERATE EMAIL — Pick a type</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                {[['weekly','📊 Weekly Report'],['gameplan','⚡ Game Plan'],['showcase','🏈 Showcase Prep'],['halftime','🚨 Halftime Adjust']].map(([type,lbl])=>(
+                  <button key={type} onClick={()=>genEmail(type)} disabled={load} style={{padding:'10px 6px',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#9ca3af',fontSize:10,fontWeight:700,cursor:load?'default':'pointer',textAlign:'center'}}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+            {load&&<div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14,textAlign:'center'}}><span style={{fontSize:12,color:'#06b6d4'}}>Writing from your season data...</span></div>}
+            {composed&&!load&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8,letterSpacing:1}}>GENERATED EMAIL — Edit if needed</div>
+                <div style={{marginBottom:7}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SUBJECT</div><input value={subject} onChange={e=>setSubject(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                <div style={{marginBottom:7}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>TO</div><div style={{background:'#111',border:'0.5px solid #252525',borderRadius:6,padding:'7px',fontSize:11,color:'#06b6d4',wordBreak:'break-all'}}>{emailList||'Select coaches above to populate'}</div></div>
+                <textarea value={body} onChange={e=>setBody(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:11,outline:'none',minHeight:160,resize:'none',boxSizing:'border-box',lineHeight:1.6,marginBottom:8}}/>
+                <button onClick={()=>window.open(`mailto:${emailList}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)} style={{width:'100%',padding:'12px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>📧 OPEN IN MAIL APP — Send to Selected Coaches</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const PlayerProfilesTab=()=>{
+    const [selId,setSelId]=React.useState('cooper')
+    const [load,setLoad]=React.useState(false)
+    const [aiReport,setAiReport]=React.useState('')
+    const [addMode,setAddMode]=React.useState(false)
+    const [newP,setNewP]=React.useState({name:'',number:'',pos:'WR',grade:'B',col:'#06b6d4'})
+    const [players,setPlayers]=React.useState([
+      {id:'cooper',name:'Cooper Melvin',number:'',pos:'QB',grade:'A',col:'#22c55e',
+       stats:{Comp:'84%',Yards:'658',YPA:'13.2',RTG:'87',ATT:'63',Sessions:'6'},
+       sessions:[{d:'4/21',g:'B+',n:'80% comp. Sharp reads. One forced throw.'},{d:'4/27',g:'B+',n:'80% comp. Consistent. Hash throws improving.'},{d:'4/30',g:'A',n:'100% comp. 69-yd TD on Verticals. Throw of year.'},{d:'Show.',g:'A',n:'80% with coaches watching. Showcase ready.'},{d:'5/8',g:'A+',n:'100% comp. Perfect. Best form all season.'},{d:'5/12',g:'B',n:'75% comp. INT under pressure. Still strong.'}],
+       pros:['Dominant arm — 13.2 avg yds per play','Elite deep ball 88% vs NFL avg 52%','85%+ comp rate between the hashes','100% on 5/8 — best form of season','Performs under pressure with coaches watching','CPOE +4% — outperforms his projected rate'],
+       cons:['Red zone 0% — no package installed yet','Sail and Fade mechanics need drilling','Release hangtime — keep at 3.3s or less','Right hash deep routes — 0% all season'],
+       next:['Red zone route tree — Fade and back-shoulder reps','Hash accuracy drill — L and R 10 reps each','Flat release drill — fix hangtime issue','Film study — Kaepernick red zone mechanics'],
+       proj:'Hash 73→85% = RTG 87→96. Fix redzone = RTG 102. All fixes = 108+ (D1-AA/FCS territory).'},
+      {id:'ben',name:'Ben Kooi',number:'',pos:'QB',grade:'B',col:'#F0B429',
+       stats:{Comp:'70%',Yards:'310',YPA:'6.5',RTG:'71',ATT:'54',Sessions:'6'},
+       sessions:[{d:'4/21',g:'B',n:'70% comp. Good short game. Redzone miss.'},{d:'4/27',g:'C+',n:'67% comp. Inconsistent. Still improving.'},{d:'4/30',g:'C',n:'50% comp. High throws when comfortable.'},{d:'Show.',g:'B+',n:'80% comp. Most improved. Responded under pressure.'},{d:'5/8',g:'D',n:'40% comp. High release mechanic issue.'},{d:'5/12',g:'C+',n:'55% comp. Better decisions. Trending up.'}],
+       pros:['80% at Showcase — best performance under pressure','Stick and Smash 100% — reliable short game','Improving trend: 40% on 5/8 to 55% on 5/12','Decision speed 1.9s — reads short well'],
+       cons:['High throw release — mechanical issue when relaxed','Deep ball 50% — below NFL average of 52%','Hash accuracy 60% — needs significant work','Red zone 0% — no package installed'],
+       next:['Flat release mechanics — 20 reps daily, top priority','Left and right hash drills — 10 reps each side','Deep ball — 7-step drop, Sail route mechanics','Redzone — install Fade and back-shoulder package'],
+       proj:'Fix mechanics +8pts. Hash +7pts. Redzone +10pts. Total = RTG 71→96+. QB1 capable in 6 months.'},
+      {id:'wr1',name:'WR1',number:'',pos:'WR',grade:'A-',col:'#06b6d4',
+       stats:{Separation:'3.8 avg',Targets:'High',Drops:'Low',YAC:'Est 6.2',Sessions:'6'},
+       sessions:[{d:'4/21',g:'A',n:'Strong releases. Separation on Post and Verticals.'},{d:'4/27',g:'B+',n:'Good routes. Slight drift on comebacks.'},{d:'4/30',g:'A',n:'TD on 69-yd Verticals. Elite effort.'},{d:'Show.',g:'A-',n:'Competed with coaches watching.'},{d:'5/8',g:'A+',n:'Perfect session. Clean releases every route.'},{d:'5/12',g:'B+',n:'Good but Sail mechanics slightly off.'}],
+       pros:['Elite separation on Post and Verticals routes','Strong releases vs press coverage','Cooper trusts him on deep shots','Consistent target — never drops in big moments'],
+       cons:['Sail route mechanics — 0% completion all season','Comeback drift — hips not square at catch point','Red zone — no package to showcase skills yet'],
+       next:['Sail route footwork — plant and drive hard on out','Comeback route — square hips at catch point daily','Red zone — back-shoulder and fade catch drills','Film — watch elite WR releases off press coverage'],
+       proj:'Fix Sail unlocks right hash. Add red zone package = complete WR profile for recruiting.'},
+      {id:'wr2',name:'WR2',number:'',pos:'WR',grade:'B+',col:'#06b6d4',
+       stats:{Separation:'3.2 avg',Targets:'Med',Drops:'Med',YAC:'Est 4.8',Sessions:'6'},
+       sessions:[{d:'4/21',g:'B',n:'Solid underneath. Press separation issues.'},{d:'4/27',g:'B+',n:'Improved releases. Good Stick routes.'},{d:'4/30',g:'B',n:'Reliable in varsity reps.'},{d:'Show.',g:'B+',n:'Competed well with coaches watching.'},{d:'5/8',g:'A-',n:'Best session. Clean on all routes.'},{d:'5/12',g:'B',n:'Solid. Needs more vertical reps.'}],
+       pros:['Reliable underneath — Stick and Smash routes','Good hands — low drop rate on short throws','Improving week to week — positive trend'],
+       cons:['Vertical route separation needs development','Press coverage releases can improve','Deep route speed — needs to threaten safety'],
+       next:['Vertical route — explosive first step off line','Press coverage — inside release technique drill','Sprint work — push deep to stress safety coverage'],
+       proj:'Add vertical threat to profile = complete slot receiver. D3/NAIA level with development.'},
+      {id:'rb1',name:'RB1',number:'',pos:'RB',grade:'B+',col:'#d97706',
+       stats:{Carries:'Est 18',YPC:'Est 5.2',Catches:'Est 8',Screen:'100%',Sessions:'6'},
+       sessions:[{d:'4/21',g:'B+',n:'Good effort on RPO plays.'},{d:'4/27',g:'B',n:'Solid. Some blocking assignment misses.'},{d:'4/30',g:'A-',n:'Varsity reps — responded well.'},{d:'Show.',g:'B+',n:'Competed. Pass protection solid.'},{d:'5/8',g:'B+',n:'Good hands out of backfield.'},{d:'5/12',g:'B',n:'Consistent. Needs more redzone reps.'}],
+       pros:['Reliable on RPO Glance — 100% when targeted','Good hands catching out of the backfield','Pass protection — solid pocket presence for QB'],
+       cons:['Red zone — no package so no data exists yet','Screen game — needs more reps to develop','Blocking footwork — pull block consistency'],
+       next:['Screen route — 10 reps out of backfield each side','Red zone check-down — install as safety valve for Cooper','Pull block footwork — work with OL coach'],
+       proj:'Install RB red zone check-down package. Adds Cooper escape valve and helps Ben in short packages.'},
+      {id:'ol1',name:'OL Captain',number:'',pos:'OL',grade:'B',col:'#888',
+       stats:{CleanPocket:'72%',PressureAllowed:'28%',Sacks:'Low',Pancakes:'Good',Penalties:'Low'},
+       sessions:[{d:'4/21',g:'B',n:'Solid protection. One pressure allowed mid.'},{d:'4/27',g:'B+',n:'Good unit. Cooper had time on most plays.'},{d:'4/30',g:'B+',n:'Held up well in varsity reps.'},{d:'Show.',g:'B',n:'Some breakdowns but mostly clean pockets.'},{d:'5/8',g:'A-',n:'Best unit session. Cooper clean pocket all day.'},{d:'5/12',g:'B-',n:'Pressure on Cooper INT play. Must improve communication.'}],
+       pros:['72% clean pocket rate — above average for high school','Low penalty rate — disciplined and well-coached unit','Varsity reps showed up and competed at a high level'],
+       cons:['28% pressure allowed — target is 20% or under','One communication breakdown led to Cooper INT on 5/12','Stunt recognition needs improvement at LOS'],
+       next:['Stunt pick-up drill — OT and OG communication 15 reps','Slide protection calls — practice vs simulated blitz looks','Film session — identify the 5/12 breakdown and correct it'],
+       proj:'Get pressure to 20% = Cooper RTG improves 5+ points automatically. OL is the hidden stat in this program.'},
+    ])
+
+    const gc=g=>g.startsWith('A')?'#22c55e':g.startsWith('B')?'#d97706':g.startsWith('C')?'#ea580c':'#dc2626'
+    const sel=players.find(p=>p.id===selId)
+    const positions=['QB','WR','RB','TE','OL','DL','LB','DB','K','P','ST']
+
+    const genReport=async()=>{
+      if(!sel)return
+      setLoad(true);setAiReport('')
+      const statsStr=Object.entries(sel.stats||{}).map(([k,v])=>`${k}: ${v}`).join(', ')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:380,system:'You are an elite high school football coach writing a personal weekly report. Speak directly to the player using YOU. Be honest, specific, and motivating. Tell them exactly what they did well, what to fix, and give 3 specific drills to do before next practice. Sound like a great coach, not a robot.',messages:[{role:'user',content:`Write a personal weekly report for ${sel.name} (${sel.pos}) at Westfield Shamrocks. Stats: ${statsStr}. Season grade: ${sel.grade}. Strengths: ${sel.pros?.join('. ')}. Needs work: ${sel.cons?.join('. ')}. Next practice priorities: ${sel.next?.join('. ')}. Write directly to them — what they did well this week, one thing to improve, and 3 specific things to do before they step on the field again.`}]})})
+        const d=await r.json();setAiReport(d.content?.[0]?.text||'Error')
+      }catch(e){setAiReport('Connection error.')}
+      setLoad(false)
+    }
+
+    const addPlayer=()=>{
+      if(!newP.name.trim())return
+      const id='p'+Date.now()
+      setPlayers(p=>[...p,{id,name:newP.name,number:newP.number,pos:newP.pos,grade:newP.grade,col:newP.col,stats:{},sessions:[],pros:[],cons:[],next:[],proj:''}])
+      setNewP({name:'',number:'',pos:'WR',grade:'B',col:'#06b6d4'})
+      setAddMode(false);setSelId(id)
+    }
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div><div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>🏈 PLAYER PROFILES — Full Team Roster</div><div style={{fontSize:8,color:'#555',marginTop:2}}>Every player · Weekly grades · Pros and cons · Next practice plan · AI personal improvement report</div></div>
+          <button onClick={()=>setAddMode(!addMode)} style={{padding:'7px 12px',background:'#14532d',border:'none',borderRadius:6,color:'#22c55e',fontSize:10,fontWeight:700,cursor:'pointer'}}>+ Add Player</button>
+        </div>
+        {addMode&&(
+          <div style={{background:'#0d0d0d',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 0.4fr 0.8fr 0.5fr',gap:8,marginBottom:8}}>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>PLAYER NAME</div><input value={newP.name} onChange={e=>setNewP(p=>({...p,name:e.target.value}))} placeholder="Full name" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'7px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>NUMBER</div><input value={newP.number} onChange={e=>setNewP(p=>({...p,number:e.target.value}))} placeholder="#" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'7px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>POSITION</div><select value={newP.pos} onChange={e=>setNewP(p=>({...p,pos:e.target.value}))} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>{positions.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+              <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>GRADE</div><select value={newP.grade} onChange={e=>setNewP(p=>({...p,grade:e.target.value}))} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>{['A+','A','A-','B+','B','B-','C+','C','D'].map(g=><option key={g} value={g}>{g}</option>)}</select></div>
+            </div>
+            <button onClick={addPlayer} style={{width:'100%',padding:'10px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>ADD TO ROSTER</button>
+          </div>
+        )}
+        <div style={{display:'grid',gridTemplateColumns:'220px 1fr',gap:12}}>
+          <div style={{display:'flex',flexDirection:'column',gap:5}}>
+            {players.map(p=>(
+              <div key={p.id} onClick={()=>{setSelId(p.id);setAiReport('')}} style={{display:'flex',gap:8,padding:'10px',background:selId===p.id?p.col+'11':'#0d0d0d',border:`0.5px solid ${selId===p.id?p.col:'#252525'}`,borderRadius:8,cursor:'pointer',alignItems:'center'}}>
+                <div style={{width:38,height:38,borderRadius:8,background:p.col+'22',border:`1px solid ${p.col}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <div style={{fontSize:12,fontWeight:700,color:p.col}}>{p.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+                  {p.number&&<div style={{fontSize:7,color:p.col+'88'}}>#{p.number}</div>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,fontWeight:700,color:selId===p.id?p.col:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
+                  <div style={{fontSize:9,color:'#555'}}>{p.pos}</div>
+                </div>
+                <div style={{fontSize:16,fontWeight:700,color:gc(p.grade)}}>{p.grade}</div>
+              </div>
+            ))}
+          </div>
+          {sel&&(
+            <div style={{display:'flex',flexDirection:'column',gap:10,minWidth:0}}>
+              <div style={{background:'#0d0d0d',border:`1px solid ${sel.col}`,borderRadius:10,padding:16}}>
+                <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:14,paddingBottom:12,borderBottom:`0.5px solid ${sel.col}33`}}>
+                  <div style={{width:58,height:58,borderRadius:10,background:sel.col+'22',border:`2px solid ${sel.col}`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <div style={{fontSize:18,fontWeight:700,color:sel.col}}>{sel.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+                    {sel.number&&<div style={{fontSize:9,color:sel.col+'88'}}>#{sel.number}</div>}
+                  </div>
+                  <div style={{flex:1}}><div style={{fontSize:19,fontWeight:700,color:'#fff'}}>{sel.name}</div><div style={{fontSize:9,color:sel.col,fontWeight:700,letterSpacing:1,marginTop:2}}>{sel.pos} · WESTFIELD SHAMROCKS · 2026-2027</div></div>
+                  <div style={{textAlign:'center',flexShrink:0}}><div style={{fontSize:34,fontWeight:700,color:gc(sel.grade)}}>{sel.grade}</div><div style={{fontSize:8,color:'#555'}}>SEASON GRADE</div></div>
+                </div>
+                {sel.stats&&Object.keys(sel.stats).length>0&&(
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:5,marginBottom:14}}>
+                    {Object.entries(sel.stats).map(([k,v])=>(
+                      <div key={k} style={{background:'#111',borderRadius:6,padding:'7px 4px',textAlign:'center'}}>
+                        <div style={{fontSize:13,fontWeight:700,color:sel.col}}>{v}</div>
+                        <div style={{fontSize:7,color:'#555',marginTop:2}}>{k.toUpperCase()}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {sel.sessions?.length>0&&(
+                  <div style={{marginBottom:14}}><div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>WEEKLY GRADES — Tap for session notes</div>
+                    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                      {sel.sessions.map(s=>(
+                        <div key={s.d} style={{background:'#111',border:`0.5px solid ${gc(s.g)}33`,borderRadius:6,padding:'6px 8px',textAlign:'center',flex:'1 1 70px'}}>
+                          <div style={{fontSize:13,fontWeight:700,color:gc(s.g)}}>{s.g}</div>
+                          <div style={{fontSize:8,color:'#555',marginTop:1}}>{s.d}</div>
+                          <div style={{fontSize:7,color:'#444',marginTop:2,lineHeight:1.3}}>{s.n}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+                  <div><div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:5}}>STRENGTHS</div>{sel.pros?.map((p,i)=><div key={i} style={{fontSize:11,color:'#9ca3af',padding:'4px 0',borderBottom:'0.5px solid #1d3a1d',lineHeight:1.5}}><span style={{color:'#22c55e',marginRight:5}}>✓</span>{p}</div>)}</div>
+                  <div><div style={{fontSize:9,fontWeight:700,color:'#dc2626',marginBottom:5}}>NEEDS IMPROVEMENT</div>{sel.cons?.map((x,i)=><div key={i} style={{fontSize:11,color:'#fca5a5',padding:'4px 0',borderBottom:'0.5px solid #2a0404',lineHeight:1.5}}><span style={{color:'#dc2626',marginRight:5}}>✗</span>{x}</div>)}</div>
+                </div>
+                {sel.next?.length>0&&(
+                  <div style={{background:'#111',borderRadius:8,padding:12,marginBottom:12}}><div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>BEFORE NEXT PRACTICE — DO THESE</div>
+                    {sel.next.map((item,i)=><div key={i} style={{display:'flex',gap:8,padding:'5px 0',borderBottom:'0.5px solid #1a1a2a',alignItems:'flex-start'}}><span style={{fontSize:11,fontWeight:700,color:'#06b6d4',minWidth:18,flexShrink:0}}>{i+1}.</span><span style={{fontSize:11,color:'#ccc',lineHeight:1.4}}>{item}</span></div>)}
+                  </div>
+                )}
+                {sel.proj&&<div style={{background:sel.col+'11',border:`0.5px solid ${sel.col}33`,borderRadius:6,padding:10,marginBottom:12}}><div style={{fontSize:8,fontWeight:700,color:sel.col,marginBottom:3,letterSpacing:1}}>PROJECTION</div><div style={{fontSize:11,color:'#ccc',lineHeight:1.5}}>{sel.proj}</div></div>}
+                <button onClick={genReport} disabled={load} style={{width:'100%',padding:'12px',background:load?'#111':'#0c1a3a',border:`1px solid ${load?'#252525':'#06b6d4'}`,borderRadius:8,color:load?'#555':'#06b6d4',fontWeight:700,fontSize:13,cursor:load?'default':'pointer'}}>
+                  {load?'Writing your personal report...':'🤖 AI PERSONAL REPORT — What I need to do before next practice'}
+                </button>
+                {aiReport&&<div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginTop:10}}><div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:8,letterSpacing:1}}>PERSONAL REPORT FOR {sel.name.toUpperCase()}</div><div style={{fontSize:13,color:'#ccc',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{aiReport}</div></div>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
