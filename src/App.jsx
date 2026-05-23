@@ -2360,6 +2360,693 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const QuickCallTab=()=>{
+    const [dn,setDn]=React.useState('1st')
+    const [dist,setDist]=React.useState('10')
+    const [hash,setHash]=React.useState('Middle')
+    const [zone,setZone]=React.useState('Open Field')
+    const [qb,setQb]=React.useState('Cooper')
+    const [score,setScore]=React.useState('Tied')
+    const [history,setHistory]=React.useState([])
+    const [aiTip,setAiTip]=React.useState('')
+    const [tipLoad,setTipLoad]=React.useState(false)
+    const [favs,setFavs]=React.useState(['Baltimore','Stick','Post'])
+    const [selPlay,setSelPlay]=React.useState(null)
+    const [playExp,setPlayExp]=React.useState('')
+    const [expLoad,setExpLoad]=React.useState(false)
+
+    const plays=[
+      {name:'Baltimore',comp:100,epa:1.8,yds:12.4,grade:'ELITE',col:'#22c55e',bg:'#0a1a0a',when:'Any down any hash deep routes',beats:'Cover 1 Cover 3 Cover 4'},
+      {name:'Post',comp:100,epa:1.4,yds:13.1,grade:'ELITE',col:'#22c55e',bg:'#0a1a0a',when:'1st down left hash',beats:'Cover 3 Cover 1 Man'},
+      {name:'Four Verts',comp:100,epa:1.9,yds:22.0,grade:'ELITE',col:'#22c55e',bg:'#0a1a0a',when:'Showcase plays deep shot',beats:'Cover 1 Cover 0 Man'},
+      {name:'Verticals',comp:88,epa:2.1,yds:28.5,grade:'ELITE',col:'#22c55e',bg:'#0a1a0a',when:'Deep shot when winning',beats:'Any coverage with speed'},
+      {name:'Stick',comp:100,epa:0.8,yds:7.7,grade:'ELITE',col:'#22c55e',bg:'#0a1a0a',when:'Any down any situation',beats:'Zone coverage Cover 2 Cover 3'},
+      {name:'Out',comp:100,epa:0.2,yds:6.5,grade:'SOLID',col:'#d97706',bg:'#1a0e00',when:'2nd and medium converts',beats:'Cover 2 Zone soft coverage'},
+      {name:'Slant',comp:90,epa:0.3,yds:5.1,grade:'SOLID',col:'#d97706',bg:'#1a0e00',when:'Game opener rhythm call',beats:'Press man off coverage'},
+      {name:'Smash',comp:100,epa:0.5,yds:8.0,grade:'BUILD',col:'#d97706',bg:'#1a0e00',when:'Zone coverage attack',beats:'Cover 2 soft zone'},
+      {name:'RPO Glance',comp:100,epa:0.4,yds:7.5,grade:'BUILD',col:'#d97706',bg:'#1a0e00',when:'Mixed coverages QB run threat',beats:'Light box run-pass conflict'},
+      {name:'Sail',comp:0,epa:-0.6,yds:0,grade:'NEVER',col:'#dc2626',bg:'#1a0404',when:'DO NOT CALL — 0% all season',beats:'Nothing — remove immediately'},
+      {name:'Fade',comp:0,epa:-0.8,yds:0,grade:'NEVER',col:'#dc2626',bg:'#1a0404',when:'DO NOT CALL — worst in script',beats:'Nothing — drill only no live reps'},
+    ]
+
+    const getTop3=()=>{
+      let ranked=[...plays]
+      if(dn==='3rd'&&(dist==='1-3'||dist==='Short'))ranked=ranked.sort((a,b)=>(b.comp+b.epa*10)-(a.comp+a.epa*10))
+      else if(zone==='Red Zone')ranked=ranked.filter(p=>p.grade!=='NEVER').sort((a,b)=>b.comp-a.comp)
+      else if(dist==='10+'||dist==='Long')ranked=ranked.filter(p=>p.yds>8).sort((a,b)=>b.epa-a.epa)
+      else ranked=ranked.filter(p=>p.grade!=='NEVER').sort((a,b)=>b.epa-a.epa)
+      return ranked.filter(p=>p.grade!=='NEVER').slice(0,3)
+    }
+
+    const top3=getTop3()
+    const neverCall=plays.filter(p=>p.grade==='NEVER')
+
+    const getAiTip=async()=>{
+      setTipLoad(true);setAiTip('')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:120,system:'You are an offensive coordinator. Give ONE specific play call tip in 2 sentences max. Be direct and confident. Name the exact play.',messages:[{role:'user',content:`${dn} and ${dist}, ${hash} hash, ${zone}, score ${score}, QB ${qb}. Our data: ${CTX} What is the single best play call right now and why?`}]})})
+        const d=await r.json();setAiTip(d.content?.[0]?.text||'')
+      }catch(e){setAiTip('Connection error.')}
+      setTipLoad(false)
+    }
+
+    const explainPlay=async(play)=>{
+      setSelPlay(play.name);setPlayExp('');setExpLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,system:'You are an offensive coordinator. Explain in exactly 2 sentences why to call this play right now, what coverage it beats, and what the QB reads. Be specific.',messages:[{role:'user',content:`Why call ${play.name} on ${dn} and ${dist}, ${hash} hash, ${zone}? Our stats: ${play.comp}% comp ${play.epa} EPA ${play.yds} avg yds. Beats: ${play.beats}.`}]})})
+        const d=await r.json();setPlayExp(d.content?.[0]?.text||'')
+      }catch(e){setPlayExp('Connection error.')}
+      setExpLoad(false)
+    }
+
+    const logCall=(name)=>{setHistory(h=>[name,...h].slice(0,5))}
+    const toggleFav=(name)=>setFavs(f=>f.includes(name)?f.filter(x=>x!==name):[...f,name])
+    const gc=g=>g==='ELITE'?'#22c55e':g==='SOLID'?'#d97706':g==='BUILD'?'#d97706':'#dc2626'
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>⚡ QUICK CALL CARD — Situation to Play in 5 Seconds</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Set situation · Top 3 plays appear instantly · Tap for AI explanation · Log the call</div>
+        </div>
+
+        {history.length>0&&(
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:6,padding:'8px 12px',marginBottom:10,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+            <span style={{fontSize:8,fontWeight:700,color:'#555',marginRight:4,letterSpacing:1}}>LAST CALLS:</span>
+            {history.map((h,i)=>{
+              const isDupe=history.indexOf(h)<i||history.slice(0,i).includes(h)
+              return<span key={i} style={{fontSize:10,fontWeight:700,color:isDupe?'#dc2626':'#F0B429',background:isDupe?'#1a0404':'#1a1a00',padding:'2px 8px',borderRadius:4,border:`0.5px solid ${isDupe?'#dc2626':'#333'}`}}>{h}{isDupe&&' ⚠'}</span>
+            })}
+            {history.length>=2&&history[0]===history[1]&&<span style={{fontSize:9,color:'#dc2626',fontWeight:700}}>← Same concept twice! Mix it up.</span>}
+          </div>
+        )}
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10}}>
+          {[['DOWN',['1st','2nd','3rd','4th'],dn,setDn,'#22c55e'],['DISTANCE',['Short 1-3','Med 4-7','Long 8-9','10+'],dist,setDist,'#22c55e'],['HASH',['Left','Middle','Right'],hash,setHash,'#06b6d4'],['FIELD ZONE',['Own 10-20','Open Field','Red Zone'],zone,setZone,'#06b6d4'],['QB',['Cooper','Ben'],qb,setQb,'#22c55e'],['SCORE',['Tied','Up 7+','Down 7+'],score,setScore,'#dc2626']].map(([lbl,opts,val,set,ac])=>(
+            <div key={lbl}><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>{lbl}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                {opts.map(o=><button key={o} onClick={()=>set(o)} style={{padding:'6px 8px',background:val===o?ac+'22':'#111',border:`1px solid ${val===o?ac:'#252525'}`,borderRadius:5,color:val===o?ac:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{o}</button>)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TOP 3 PLAYS — CALL THESE NOW</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {top3.map((play,i)=>(
+                <div key={play.name} style={{background:play.bg,border:`1px solid ${play.col}`,borderRadius:10,padding:'12px 14px',cursor:'pointer',position:'relative'}} onClick={()=>explainPlay(play)}>
+                  <div style={{position:'absolute',top:8,right:8,display:'flex',gap:4}}>
+                    <button onClick={e=>{e.stopPropagation();toggleFav(play.name)}} style={{background:'transparent',border:'none',color:favs.includes(play.name)?'#F0B429':'#333',fontSize:14,cursor:'pointer',padding:0}}>★</button>
+                    <button onClick={e=>{e.stopPropagation();logCall(play.name)}} style={{background:play.col+'22',border:`0.5px solid ${play.col}`,borderRadius:4,color:play.col,fontSize:8,fontWeight:700,cursor:'pointer',padding:'2px 6px'}}>LOG</button>
+                  </div>
+                  <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:4}}>
+                    <div style={{width:22,height:22,borderRadius:4,background:play.col,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#000',flexShrink:0}}>{i+1}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:play.col}}>{play.name}</div>
+                    <div style={{fontSize:9,fontWeight:700,color:play.col,background:play.col+'22',padding:'1px 6px',borderRadius:4}}>{play.grade}</div>
+                  </div>
+                  <div style={{display:'flex',gap:12}}>
+                    <span style={{fontSize:11,fontWeight:700,color:'#22c55e'}}>{play.comp}%</span>
+                    <span style={{fontSize:11,fontWeight:700,color:'#F0B429'}}>{play.yds} yds</span>
+                    <span style={{fontSize:11,fontWeight:700,color:'#06b6d4'}}>EPA {play.epa>=0?'+':''}{play.epa}</span>
+                  </div>
+                  <div style={{fontSize:8,color:'#555',marginTop:3}}>{play.when}</div>
+                  {selPlay===play.name&&(
+                    <div style={{marginTop:8,padding:'8px',background:'#0a0a0a',borderRadius:6,borderTop:`1px solid ${play.col}33`}}>
+                      {expLoad?<div style={{fontSize:11,color:'#06b6d4'}}>Getting AI explanation...</div>:<div style={{fontSize:11,color:'#ccc',lineHeight:1.6}}>{playExp}</div>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            <div>
+              <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:6,letterSpacing:1}}>MY FAVORITES ★</div>
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                {plays.filter(p=>favs.includes(p.name)).map(play=>(
+                  <div key={play.name} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 10px',background:'#111',border:`0.5px solid ${play.col}33`,borderRadius:6,cursor:'pointer'}} onClick={()=>explainPlay(play)}>
+                    <div><span style={{fontSize:11,fontWeight:700,color:play.col}}>{play.name}</span><span style={{fontSize:8,color:'#444',marginLeft:6}}>{play.comp}% · +{play.epa} EPA</span></div>
+                    <div style={{display:'flex',gap:4}}>
+                      <button onClick={e=>{e.stopPropagation();toggleFav(play.name)}} style={{background:'transparent',border:'none',color:'#F0B429',fontSize:12,cursor:'pointer',padding:0}}>★</button>
+                      <button onClick={e=>{e.stopPropagation();logCall(play.name)}} style={{background:'#14532d',border:'none',borderRadius:4,color:'#22c55e',fontSize:8,fontWeight:700,cursor:'pointer',padding:'2px 6px'}}>LOG</button>
+                    </div>
+                  </div>
+                ))}
+                {favs.length===0&&<div style={{fontSize:11,color:'#333',padding:'8px'}}>Tap ★ on any play to save it here</div>}
+              </div>
+            </div>
+
+            <div style={{background:'#1a0404',border:'1px solid #dc262644',borderRadius:8,padding:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#dc2626',marginBottom:6,letterSpacing:1}}>NEVER CALL THESE</div>
+              {neverCall.map(p=>(
+                <div key={p.name} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'0.5px solid #2a0404'}}>
+                  <span style={{fontSize:11,fontWeight:700,color:'#dc2626'}}>{p.name}</span>
+                  <span style={{fontSize:9,color:'#7f1d1d'}}>0% · {p.epa} EPA · Drill only</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>AI SITUATION TIP</div>
+              {aiTip?<div style={{fontSize:12,color:'#ccc',lineHeight:1.6}}>{aiTip}</div>:<div style={{fontSize:11,color:'#333'}}>Tap to get AI read for this exact situation</div>}
+              <button onClick={getAiTip} disabled={tipLoad} style={{width:'100%',marginTop:8,padding:'9px',background:tipLoad?'#111':'#0c1a3a',border:`0.5px solid ${tipLoad?'#252525':'#06b6d4'}`,borderRadius:6,color:tipLoad?'#555':'#06b6d4',fontWeight:700,fontSize:11,cursor:'pointer'}}>
+                {tipLoad?'Reading the situation...':'🤖 Get AI Read for This Situation'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+          <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'1.2fr 0.6fr 0.6fr 0.7fr 1.5fr 0.8fr'}}>{['CONCEPT','COMP%','YDS','EPA','BEATS','GRADE'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}</div>
+          {plays.map((p,i)=>(
+            <div key={p.name} style={{display:'grid',gridTemplateColumns:'1.2fr 0.6fr 0.6fr 0.7fr 1.5fr 0.8fr',padding:'7px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center',cursor:'pointer'}} onClick={()=>explainPlay(p)}>
+              <div style={{fontSize:9,fontWeight:700,color:p.col}}>{p.name}</div>
+              <div style={{fontSize:10,fontWeight:700,color:gc(p.grade),textAlign:'center'}}>{p.comp}%</div>
+              <div style={{fontSize:10,textAlign:'center',color:'#F0B429'}}>{p.yds}</div>
+              <div style={{fontSize:10,fontWeight:700,textAlign:'center',color:p.epa>=0?'#22c55e':'#dc2626'}}>{p.epa>=0?'+':''}{p.epa}</div>
+              <div style={{fontSize:8,color:'#555'}}>{p.beats}</div>
+              <div style={{fontSize:8,fontWeight:700,textAlign:'center',color:gc(p.grade)}}>{p.grade}</div>
+            </div>
+          ))}
+          <div style={{padding:'7px 12px',background:'#0a0a0a',fontSize:8,color:'#444'}}>Tap any row for AI coaching on exactly when and how to call it</div>
+        </div>
+      </div>
+    )
+  }
+
+  const OpponentScoutTab=()=>{
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Opponent Scout AI ready. Tell me what you know about the defense you are facing — formations, tendencies, their best player, blitz packages — and I will build a custom game plan to attack them. The more you tell me, the sharper the plan.'}])
+    const [inp,setInp]=React.useState('')
+    const [load,setLoad]=React.useState(false)
+    const [oppName,setOppName]=React.useState('')
+    const [tagged,setTagged]=React.useState([])
+    const [liveDef,setLiveDef]=React.useState([])
+    const [defInp,setDefInp]=React.useState('')
+    const ref=React.useRef(null)
+
+    const tendencies=['Shows Cover 2 then rotates to Cover 4','Blitzes inside LB every 3rd and long','Soft zone underneath — gives up short all day','Press man on outside WR every play','Safety walks into box pre-snap','Never blitzes — sits in zone','Corner bails at snap — plays off man','Heavy Cover 3 — middle seam open','Rotates safety to Cooper side','Weak DB at right corner — target him','No adjustment to RPO — run it all day','Linebacker chases motion — use it']
+    const coverages=[
+      {name:'Cover 1 Man',abbr:'C1',beat:'Post and Baltimore attack the seam. Cooper 1-on-1 deep. Four Verts stretches.'},
+      {name:'Cover 2 Zone',abbr:'C2',beat:'Stick underneath. Smash to the corner. Four Verts splits the safeties.'},
+      {name:'Cover 3 Sky',abbr:'C3',beat:'Stick into the flat. Post behind the curl-flat defender. Verticals on backside.'},
+      {name:'Cover 4 Quarters',abbr:'C4',beat:'RPO Glance — stress the box. Stick underneath. Baltimore on the dig.'},
+      {name:'Cover 0 Blitz',abbr:'C0',beat:'Quick game — Slant and Out immediately. Get rid of ball in 1.5s.'},
+      {name:'Tampa 2',abbr:'T2',beat:'Verticals on both sides. Make the MLB run deep. Baltimore behind him.'},
+      {name:'Cover 6 Hybrid',abbr:'C6',beat:'Attack the weak side. Out to the field. Post away from the safety.'},
+      {name:'Press Man',abbr:'PM',beat:'Slant and stick — Cooper throws hot. Four Verts — WR beats press deep.'},
+    ]
+
+    const toggleTag=t=>setTagged(p=>p.includes(t)?p.filter(x=>x!==t):[...p,t])
+    const addDef=()=>{if(!defInp.trim())return;setLiveDef(p=>[...p,{id:Date.now(),obs:defInp,time:new Date().toLocaleTimeString()}]);setDefInp('')}
+
+    const OPP_SYS=`You are a college-level offensive coordinator analyzing an opposing defense for Westfield Shamrocks. Our offense: ${CTX} Give SHORT DIRECT answers — max 4 sentences. Tell coaches exactly which plays to run against this defense and why. Reference our actual stats.`
+
+    const send=async(msg)=>{
+      if(!msg.trim()||load)return
+      const ctx=`Opponent${oppName?' '+oppName:''}. Tagged tendencies: ${tagged.length?tagged.join(', '):'none yet'}. Live observations this game: ${liveDef.map(d=>d.obs).join(', ')||'none yet'}. `
+      const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
+      setMsgs(nm);setInp('');setLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:OPP_SYS,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
+      }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
+      setLoad(false)
+    }
+
+    const genGamePlan=()=>send(`Build me a full offensive game plan against this opponent. Give me: 3 plays to open the game, 2 red zone plays even though we have none built yet, which concept to run on every 3rd down, and what to do if they adjust.`)
+    React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🔍 OPPONENT SCOUTING — Know What You Are Facing</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Tag their tendencies before the game · Log what you see live · AI builds the counter attack instantly</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.2fr',gap:12}}>
+          <div>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:8,color:'#555',marginBottom:4,letterSpacing:1}}>OPPONENT NAME</div>
+              <input value={oppName} onChange={e=>setOppName(e.target.value)} placeholder="Enter team name..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>TAG THEIR TENDENCIES</div>
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                {tendencies.map(t=>(
+                  <button key={t} onClick={()=>toggleTag(t)} style={{padding:'7px 10px',background:tagged.includes(t)?'#0c1a3a':'#0d0d0d',border:`0.5px solid ${tagged.includes(t)?'#06b6d4':'#252525'}`,borderRadius:6,color:tagged.includes(t)?'#06b6d4':'#666',fontSize:9,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{color:tagged.includes(t)?'#22c55e':'#333',fontSize:11,minWidth:12}}>{tagged.includes(t)?'✓':'○'}</span>{t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>LIVE OBSERVATIONS THIS GAME</div>
+              <div style={{display:'flex',gap:4,marginBottom:6}}>
+                <input value={defInp} onChange={e=>setDefInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addDef()} placeholder="What are you seeing right now?" style={{flex:1,background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:11,outline:'none'}}/>
+                <button onClick={addDef} style={{padding:'7px 12px',background:'#0c1a3a',border:'0.5px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontSize:10,fontWeight:700,cursor:'pointer'}}>+ Log</button>
+              </div>
+              {liveDef.map(d=><div key={d.id} style={{fontSize:9,color:'#9ca3af',padding:'4px 8px',background:'#111',borderRadius:4,marginBottom:3,display:'flex',gap:6}}><span style={{color:'#444',flexShrink:0}}>{d.time}</span>{d.obs}</div>)}
+            </div>
+            <div>
+              <div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>COVERAGE GUIDE — TAP TO BEAT IT</div>
+              {coverages.map(cv=>(
+                <div key={cv.name} style={{padding:'8px 10px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:6,marginBottom:4,cursor:'pointer'}} onClick={()=>send(`They are showing ${cv.name}. What exact play do we call to beat it right now?`)}>
+                  <div style={{display:'flex',gap:6,alignItems:'center',marginBottom:3}}>
+                    <span style={{fontSize:10,fontWeight:700,color:'#dc2626',background:'#dc262622',padding:'1px 6px',borderRadius:4,minWidth:28,textAlign:'center'}}>{cv.abbr}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:'#F0B429'}}>{cv.name}</span>
+                  </div>
+                  <div style={{fontSize:8,color:'#555'}}>{cv.beat}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <button onClick={genGamePlan} style={{padding:'11px',background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:12,cursor:'pointer'}}>⚡ Generate Full Game Plan Against This Opponent</button>
+            <div style={{flex:1,overflowY:'auto',background:'#090909',border:'0.5px solid #0c1a3a',borderRadius:8,padding:10,display:'flex',flexDirection:'column',gap:8,minHeight:420}}>
+              {msgs.map((m,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'90%',padding:'9px 12px',borderRadius:10,background:m.role==='user'?'#0c1a3a':'#111',border:`0.5px solid ${m.role==='user'?'#06b6d433':'#252525'}`,borderBottomRightRadius:m.role==='user'?2:10,borderBottomLeftRadius:m.role==='assistant'?2:10}}>
+                    {m.role==='assistant'&&<div style={{fontSize:8,fontWeight:700,color:'#06b6d4',marginBottom:3,letterSpacing:1}}>SCOUT AI</div>}
+                    <div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{m.content}</div>
+                  </div>
+                </div>
+              ))}
+              {load&&<div style={{display:'flex'}}><div style={{padding:'8px 12px',background:'#111',borderRadius:10,border:'0.5px solid #252525'}}><span style={{fontSize:11,color:'#06b6d4'}}>Analyzing opponent...</span></div></div>}
+              <div ref={ref}/>
+            </div>
+            <div style={{display:'flex',gap:4}}>
+              <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)} placeholder="Ask about their defense or request a counter play..." style={{flex:1,background:'#111',border:'0.5px solid #0c1a3a',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/>
+              <button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:'10px 16px',background:load||!inp.trim()?'#111':'#0c1a3a',border:`0.5px solid ${load||!inp.trim()?'#252525':'#06b6d4'}`,borderRadius:8,color:load||!inp.trim()?'#555':'#06b6d4',fontWeight:700,cursor:'pointer'}}>Scout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const PracticeScriptTab=()=>{
+    const [script,setScript]=React.useState([])
+    const [focus,setFocus]=React.useState('Balanced')
+    const [qbFocus,setQbFocus]=React.useState('Both')
+    const [reps,setReps]=React.useState(20)
+    const [load,setLoad]=React.useState(false)
+    const [checked,setChecked]=React.useState([])
+    const [aiScript,setAiScript]=React.useState('')
+
+    const focusOptions=['Balanced','Red Zone Install','Hash Accuracy','Deep Ball','Short Game','Ben Development','Cooper Showcase','Pressure Situations']
+    const baseScript=[
+      {n:1,concept:'Baltimore',qb:'Cooper',focus:'Deep ball arm — 3 reps each hash',goal:'100% comp',why:'Best big play — needs daily reps to stay sharp'},
+      {n:2,concept:'Post',qb:'Cooper',focus:'Left hash step and throw',goal:'100% comp',why:'Primary 1st down weapon — own this route'},
+      {n:3,concept:'Stick',qb:'Both',focus:'Quick release — 1.8s TTT target',goal:'100% comp',why:'Most called concept — automatic every time'},
+      {n:4,concept:'Stick',qb:'Ben',focus:'Flat release mechanics — fix high throw',goal:'85%+ comp',why:'Ben top priority — release point issue'},
+      {n:5,concept:'Out',qb:'Both',focus:'Right hash footwork — set feet to target',goal:'90%+ comp',why:'Right hash weakness for both QBs — address it'},
+      {n:6,concept:'Slant',qb:'Cooper',focus:'Game rhythm opener — 5 reps quick',goal:'90%+ comp',why:'Game opener builds confidence and momentum'},
+      {n:7,concept:'Baltimore',qb:'Cooper',focus:'Right hash — weakest zone this season',goal:'75%+ comp',why:'Right deep 0% — needs rep work before game'},
+      {n:8,concept:'Smash',qb:'Both',focus:'Zone coverage — corner and flat combo',goal:'100% comp',why:'Building this concept — good early results'},
+      {n:9,concept:'RPO Glance',qb:'Cooper',focus:'Read the box — run or throw decision',goal:'100% comp',why:'Adds QB run dimension — showcases mobility'},
+      {n:10,concept:'Verticals',qb:'Cooper',focus:'Deep shot timing — 28+ yard target',goal:'85%+ comp',why:'Highest EPA — use it when winning by 7+'},
+      {n:11,concept:'Fade',qb:'Both',focus:'MECHANICS ONLY — no live reps',goal:'Fix release',why:'0% all season — must fix before we can live call'},
+      {n:12,concept:'Red Zone',qb:'Both',focus:'Install back-shoulder and fade to end zone',goal:'50%+ comp',why:'Critical gap — 0% all season installs today'},
+      {n:13,concept:'Post',qb:'Ben',focus:'Deep ball — 7-step drop mechanics',goal:'65%+ comp',why:'Ben deep ball 50% — below NFL average needs work'},
+      {n:14,concept:'Four Verts',qb:'Cooper',focus:'Showcase rep — college coach film',goal:'100% comp',why:'Cooper 100% on this — best play for recruiting'},
+      {n:15,concept:'Hash Routes',qb:'Both',focus:'Left and right hash 10 reps each',goal:'80%+ comp',why:'Both QBs under 75% on hash — daily focus'},
+    ]
+
+    const genScript=async()=>{
+      setLoad(true);setAiScript('')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:`You are an offensive coordinator building a practice script for Westfield Shamrocks. Season data: ${CTX} Build a ${reps}-rep practice script focused on: ${focus}. QB focus: ${qbFocus}. Format as a numbered list. Each line: [Rep#] CONCEPT — QB — Focus — Goal. Be specific. Target the actual weaknesses in the data.`,messages:[{role:'user',content:`Build a ${reps}-play practice script for ${focus} focus, QB focus ${qbFocus}. Make every rep count.`}]})})
+        const d=await r.json();setAiScript(d.content?.[0]?.text||'Error')
+        setScript(baseScript.slice(0,reps))
+      }catch(e){setAiScript('Connection error.')}
+      setLoad(false)
+    }
+
+    const toggleCheck=n=>setChecked(p=>p.includes(n)?p.filter(x=>x!==n):[...p,n])
+    const pct=script.length?Math.round(checked.length/script.length*100):0
+    const remaining=script.filter(s=>!checked.includes(s.n))
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#1a1400',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📋 PRACTICE SCRIPT BUILDER — AI Builds the Plan, You Run It</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Set your focus · AI builds a script from your gap data · Check off each rep as you run it · Never show up to practice without a plan again</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:12}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:10,letterSpacing:1}}>BUILD TODAY\'S SCRIPT</div>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:8,color:'#555',marginBottom:5}}>PRACTICE FOCUS</div>
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                {focusOptions.map(f=><button key={f} onClick={()=>setFocus(f)} style={{padding:'8px 10px',background:focus===f?'#2a1a00':'#111',border:`0.5px solid ${focus===f?'#F0B429':'#252525'}`,borderRadius:6,color:focus===f?'#F0B429':'#555',fontSize:10,fontWeight:700,cursor:'pointer',textAlign:'left'}}>{f}</button>)}
+              </div>
+            </div>
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:8,color:'#555',marginBottom:5}}>QB FOCUS</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4}}>
+                {['Both','Cooper','Ben'].map(q=><button key={q} onClick={()=>setQbFocus(q)} style={{padding:'7px',background:qbFocus===q?'#14532d':'#111',border:`0.5px solid ${qbFocus===q?'#22c55e':'#252525'}`,borderRadius:4,color:qbFocus===q?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{q}</button>)}
+              </div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}><span style={{fontSize:8,color:'#555'}}>REPS</span><span style={{fontSize:10,fontWeight:700,color:'#F0B429'}}>{reps} plays</span></div>
+              <input type="range" min={10} max={30} step={5} value={reps} onChange={e=>setReps(Number(e.target.value))} style={{width:'100%',accentColor:'#F0B429'}}/>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:7,color:'#444',marginTop:2}}><span>10</span><span>20</span><span>30</span></div>
+            </div>
+            <button onClick={genScript} disabled={load} style={{width:'100%',padding:'13px',background:load?'#111':'#2a1a00',border:`1px solid ${load?'#252525':'#F0B429'}`,borderRadius:8,color:load?'#555':'#F0B429',fontWeight:700,fontSize:13,cursor:'pointer'}}>
+              {load?'Building script from your data...':'⚡ BUILD PRACTICE SCRIPT'}
+            </button>
+            {script.length>0&&(
+              <div style={{marginTop:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}><span style={{fontSize:9,color:'#555'}}>PRACTICE PROGRESS</span><span style={{fontSize:10,fontWeight:700,color:pct===100?'#22c55e':'#F0B429'}}>{checked.length}/{script.length} reps</span></div>
+                <div style={{height:6,background:'#1a1a1a',borderRadius:3,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${pct}%`,background:pct===100?'#22c55e':'#F0B429',borderRadius:3,transition:'width 0.3s'}}/>
+                </div>
+                {remaining.length>0&&<div style={{fontSize:8,color:'#555',marginTop:4}}>Still need: {remaining.slice(0,3).map(r=>r.concept).join(', ')}{remaining.length>3?` +${remaining.length-3} more`:''}</div>}
+                {pct===100&&<div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginTop:6,textAlign:'center'}}>✓ Full script complete — great practice!</div>}
+              </div>
+            )}
+          </div>
+
+          <div>
+            {aiScript&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #2a1a00',borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>AI GENERATED SCRIPT — {reps} reps · {focus} focus</div>
+                <div style={{fontSize:11,color:'#ccc',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{aiScript}</div>
+              </div>
+            )}
+            {script.length>0&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,overflow:'hidden'}}>
+                <div style={{background:'#0a0a0a',padding:'7px 12px',borderBottom:'0.5px solid #252525',display:'grid',gridTemplateColumns:'0.4fr 1fr 0.7fr 1fr 1fr'}}>{['REP','CONCEPT','QB','FOCUS','GOAL'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}</div>
+                {baseScript.slice(0,reps).map((s,i)=>(
+                  <div key={s.n} onClick={()=>toggleCheck(s.n)} style={{display:'grid',gridTemplateColumns:'0.4fr 1fr 0.7fr 1fr 1fr',padding:'8px 12px',background:checked.includes(s.n)?'#0a1a0a':i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',cursor:'pointer',alignItems:'center',opacity:checked.includes(s.n)?0.6:1}}>
+                    <div style={{display:'flex',gap:5,alignItems:'center'}}>
+                      <div style={{width:16,height:16,borderRadius:3,border:`1.5px solid ${checked.includes(s.n)?'#22c55e':'#333'}`,background:checked.includes(s.n)?'#22c55e':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        {checked.includes(s.n)&&<span style={{color:'#000',fontSize:10,fontWeight:700,lineHeight:1}}>✓</span>}
+                      </div>
+                      <span style={{fontSize:9,color:'#555'}}>{s.n}</span>
+                    </div>
+                    <div style={{fontSize:9,fontWeight:700,color:checked.includes(s.n)?'#22c55e':'#F0B429'}}>{s.concept}</div>
+                    <div style={{fontSize:8,textAlign:'center',color:s.qb==='Cooper'?'#22c55e':s.qb==='Ben'?'#F0B429':'#9ca3af'}}>{s.qb}</div>
+                    <div style={{fontSize:8,color:'#555'}}>{s.focus}</div>
+                    <div style={{fontSize:8,color:'#06b6d4'}}>{s.goal}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!script.length&&!load&&<div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:28,textAlign:'center',color:'#333',fontSize:12}}>Set your focus and build the script — never show up to practice without a plan</div>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const LiveScoreboardTab=()=>{
+    const [plays,setPlays]=React.useState([])
+    const [qb,setQb]=React.useState('Cooper Melvin')
+    const [concept,setConcept]=React.useState('Baltimore')
+    const [result,setResult]=React.useState('Complete')
+    const [yds,setYds]=React.useState('')
+    const [driveSummary,setDriveSummary]=React.useState('')
+    const [sumLoad,setSumLoad]=React.useState(false)
+    const concepts=['Baltimore','Post','Stick','Four Verts','Verticals','Out','Slant','Smash','RPO Glance','Sail','Fade']
+
+    const log=()=>{
+      const play={id:Date.now(),qb,concept,result,yds:Number(yds)||0,time:new Date().toLocaleTimeString()}
+      const newPlays=[...plays,play]
+      setPlays(newPlays);setYds('')
+      if(newPlays.length>0&&newPlays.length%5===0) getDriveSummary(newPlays)
+    }
+
+    const getDriveSummary=async(allPlays)=>{
+      setSumLoad(true)
+      const recent=allPlays.slice(-5)
+      const summary=recent.map(p=>`${p.qb==='Cooper Melvin'?'Cooper':'Ben'} ${p.concept} ${p.result} ${p.yds}yds`).join(', ')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,system:'You are a sideline analyst. Give a 1-sentence drive summary and 1-sentence suggestion for the next series. Be direct.',messages:[{role:'user',content:`Last 5 plays: ${summary}. Our data: ${CTX} Quick assessment and next call.`}]})})
+        const d=await r.json();setDriveSummary(d.content?.[0]?.text||'')
+      }catch(e){setDriveSummary('')}
+      setSumLoad(false)
+    }
+
+    const cm=plays.filter(p=>p.qb==='Cooper Melvin')
+    const bk=plays.filter(p=>p.qb==='Ben Kooi')
+    const pct=ps=>ps.length?Math.round(ps.filter(p=>p.result==='Complete').length/ps.length*100):0
+    const ay=ps=>ps.length?(ps.reduce((a,p)=>a+p.yds,0)/ps.length).toFixed(1):0
+
+    const seasonBests={cooper:{comp:100,rtg:100,consec:5},ben:{comp:80,rtg:80,consec:3}}
+    const cmConsec=()=>{let n=0;for(let i=cm.length-1;i>=0;i--){if(cm[i].result==='Complete')n++;else break;}return n}
+    const bkConsec=()=>{let n=0;for(let i=bk.length-1;i>=0;i--){if(bk[i].result==='Complete')n++;else break;}return n}
+
+    const conceptBoard=concepts.map(ct=>{
+      const cp=plays.filter(p=>p.concept===ct)
+      return{ct,att:cp.length,pct:cp.length?Math.round(cp.filter(p=>p.result==='Complete').length/cp.length*100):null}
+    }).filter(x=>x.att>0).sort((a,b)=>(b.pct||0)-(a.pct||0))
+
+    const gc=p=>p>=90?'#22c55e':p>=70?'#d97706':p>=50?'#ea580c':'#dc2626'
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>📊 LIVE SESSION SCOREBOARD — Real Time Every Play</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Log plays · Everyone sees the same live data · Drive summary every 5 plays · Personal bests tracked automatically</div>
+        </div>
+
+        {driveSummary&&(
+          <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:'10px 14px',marginBottom:10,display:'flex',gap:8,alignItems:'flex-start'}}>
+            <span style={{fontSize:14,flexShrink:0}}>⚡</span>
+            <div><div style={{fontSize:8,fontWeight:700,color:'#22c55e',marginBottom:2,letterSpacing:1}}>DRIVE SUMMARY — AI after every 5 plays</div><div style={{fontSize:12,color:'#ccc',lineHeight:1.5}}>{sumLoad?'Analyzing last 5 plays...':driveSummary}</div></div>
+          </div>
+        )}
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:12}}>
+          {[['PLAYS',plays.length,'#22c55e'],['COOPER',cm.length?`${pct(cm)}%`:'—',pct(cm)>=80?'#22c55e':pct(cm)>=65?'#d97706':'#dc2626'],['BEN',bk.length?`${pct(bk)}%`:'—',pct(bk)>=80?'#22c55e':pct(bk)>=65?'#d97706':'#dc2626'],['HOT',plays.length?conceptBoard[0]?.ct||'—':'—','#F0B429']].map(([l,v,col])=>(
+            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'12px 6px',textAlign:'center'}}>
+              <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:3,letterSpacing:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+          {[[cm,'COOPER MELVIN','#22c55e','#070f07',cmConsec(),seasonBests.cooper],[bk,'BEN KOOI','#F0B429','#0c0a06',bkConsec(),seasonBests.ben]].map(([ps,name,col,bg,consec,bests])=>(
+            <div key={name} style={{background:bg,border:`1px solid ${col}`,borderRadius:10,padding:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+                <div style={{fontSize:10,fontWeight:700,color:col}}>{name}</div>
+                {consec>=3&&<div style={{background:col+'22',color:col,fontSize:8,fontWeight:700,padding:'2px 8px',borderRadius:4,border:`0.5px solid ${col}44`}}>🔥 {consec} straight</div>}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:8}}>
+                {[['COMP%',ps.length?`${pct(ps)}%`:'—',gc(pct(ps))],['ATT',ps.length,'#9ca3af'],['YPA',ay(ps),'#F0B429']].map(([l,v,c])=>(
+                  <div key={l} style={{textAlign:'center'}}><div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:7,color:'#555'}}>{l}</div></div>
+                ))}
+              </div>
+              {consec>bests.consec&&<div style={{background:col+'22',border:`1px solid ${col}`,borderRadius:6,padding:'6px 10px',textAlign:'center'}}><div style={{fontSize:11,fontWeight:700,color:col}}>🏆 NEW PERSONAL BEST — {consec} consecutive</div></div>}
+              {ps.length>0&&pct(ps)>=bests.comp&&<div style={{background:'#14532d',borderRadius:6,padding:'5px 10px',marginTop:4,textAlign:'center'}}><div style={{fontSize:10,fontWeight:700,color:'#22c55e'}}>⬆ Season best comp% this session</div></div>}
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+            <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',fontSize:9,fontWeight:700,color:'#22c55e',letterSpacing:1}}>LIVE LEADERBOARD</div>
+            {conceptBoard.length===0&&<div style={{padding:'20px',textAlign:'center',fontSize:11,color:'#333'}}>Log plays to see live rankings</div>}
+            {conceptBoard.map((x,i)=>(
+              <div key={x.ct} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a'}}>
+                <span style={{fontSize:11,fontWeight:700,color:'#555',minWidth:16}}>{i+1}</span>
+                <span style={{fontSize:10,fontWeight:700,color:'#F0B429',flex:1}}>{x.ct}</span>
+                <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                  <div style={{width:60,height:6,background:'#1a1a1a',borderRadius:3,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${x.pct}%`,background:gc(x.pct),borderRadius:3}}/>
+                  </div>
+                  <span style={{fontSize:12,fontWeight:700,color:gc(x.pct),minWidth:36}}>{x.pct}%</span>
+                  <span style={{fontSize:8,color:'#444'}}>{x.att}att</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8,letterSpacing:1}}>LOG PLAY</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:6}}>
+              {['Cooper Melvin','Ben Kooi'].map(q=><button key={q} onClick={()=>setQb(q)} style={{padding:'8px',background:qb===q?'#14532d':'#111',border:`0.5px solid ${qb===q?'#22c55e':'#252525'}`,borderRadius:5,color:qb===q?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{q==='Cooper Melvin'?'COOPER QB1':'BEN QB2'}</button>)}
+            </div>
+            <select value={concept} onChange={e=>setConcept(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:13,marginBottom:6}}>
+              {concepts.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3,marginBottom:6}}>
+              {['Complete','Incomplete','INT','Scramble'].map(r=>{const col=r==='Complete'?'#22c55e':r==='INT'?'#dc2626':'#d97706';return<button key={r} onClick={()=>setResult(r==='INT'?'Interception':r)} style={{padding:'7px 2px',background:result===(r==='INT'?'Interception':r)?col+'22':'#111',border:`0.5px solid ${result===(r==='INT'?'Interception':r)?col:'#252525'}`,borderRadius:4,color:result===(r==='INT'?'Interception':r)?col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{r}</button>})}
+            </div>
+            <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="Yards" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'8px',fontSize:22,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
+            <button onClick={log} style={{width:'100%',padding:'13px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:14,cursor:'pointer'}}>+ LOG PLAY</button>
+          </div>
+        </div>
+
+        {plays.length>0&&(
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,overflow:'hidden'}}>
+            <div style={{background:'#0a0a0a',padding:'5px 12px',borderBottom:'0.5px solid #252525',fontSize:8,fontWeight:700,color:'#555'}}>PLAY LOG — {plays.length} total</div>
+            {[...plays].reverse().slice(0,8).map((p,i)=>{const rc=p.result==='Complete'?'#22c55e':p.result==='Incomplete'?'#d97706':'#dc2626';return(
+              <div key={p.id} style={{display:'flex',gap:8,padding:'6px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',fontSize:9,alignItems:'center'}}>
+                <span style={{color:'#333',minWidth:36}}>{p.time}</span>
+                <span style={{color:p.qb==='Cooper Melvin'?'#22c55e':'#F0B429',fontWeight:700,minWidth:22}}>{p.qb==='Cooper Melvin'?'CM':'BK'}</span>
+                <span style={{color:'#F0B429',flex:1}}>{p.concept}</span>
+                <span style={{color:rc,fontWeight:700}}>{p.result==='Complete'?'✓':p.result==='Incomplete'?'✗':'INT'}</span>
+                <span style={{color:'#9ca3af',minWidth:28}}>{p.yds>0?`${p.yds}y`:''}</span>
+              </div>
+            )})}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const CoachQuickRefTab=()=>{
+    const [q,setQ]=React.useState('')
+    const [ans,setAns]=React.useState('')
+    const [load,setLoad]=React.useState(false)
+    const [section,setSection]=React.useState('cheatsheet')
+    const ref2=React.useRef(null)
+
+    const QR_SYS=`You are the analytics director and offensive coordinator for Westfield Shamrocks. Answer any coaching question in 3 sentences max. Be direct and specific. Reference real stats. Season data: ${CTX}`
+
+    const ask=async(question)=>{
+      const msg=question||q
+      if(!msg.trim()||load)return
+      setLoad(true);setAns('');setQ('')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,system:QR_SYS,messages:[{role:'user',content:msg}]})})
+        const d=await r.json();setAns(d.content?.[0]?.text||'Error')
+      }catch(e){setAns('Connection error.')}
+      setLoad(false)
+    }
+
+    const sections=['cheatsheet','formations','weeklyemail']
+    const formations=[
+      {name:'Baltimore',type:'Deep crossing route',desc:'Y crosses behind the LBs, X runs a post. QB reads safety. Best vs Cover 1 and Cover 3.',epa:'+1.8'},
+      {name:'Post',type:'Single high beater',desc:'X runs a 15-yard post over the middle. Best on left hash. QB plants and delivers vs Cover 3.',epa:'+1.4'},
+      {name:'Four Verts',type:'Cover buster',desc:'All 4 receivers run verticals. Stresses every defensive zone. QB reads from right to left.',epa:'+1.9'},
+      {name:'Verticals',type:'2-man vertical',desc:'Two outside receivers run deep. QB reads the strong safety. Best when winning and forcing the throw.',epa:'+2.1'},
+      {name:'Stick',type:'Zone killer',desc:'Inside receiver runs 6-yard stick, outside runs a fade. QB hits the stick vs zone, fade vs man.',epa:'+0.8'},
+      {name:'Out',type:'2nd down convert',desc:'Receiver runs a 7-yard out. QB reads leverage of the CB. Quick release — get it out in 1.8s.',epa:'+0.2'},
+      {name:'Slant',type:'Press beater',desc:'Receiver runs a 45-degree slant inside. Beats press man immediately. Quick game opener.',epa:'+0.3'},
+      {name:'Smash',type:'Two-level zone attack',desc:'Corner runs a hitch, inside runs a corner route. Stresses Cover 2 — QB reads the deep half.',epa:'+0.5'},
+      {name:'RPO Glance',type:'Run-pass option',desc:'QB reads the box LB. Give to back on run, throw glance route to WR. Stresses run-pass discipline.',epa:'+0.4'},
+    ]
+
+    const quickQs=['What is our best play on 3rd and short?','What play beats Cover 2 with our guys?','When do we put Ben in?','What should we never call?','How does Cooper compare to a D2 recruit?','What is our biggest gap to fix?','Best play for the college showcase?','What does Ben need to work on today?']
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>📚 COACHING QUICK REFERENCE — Everything in One Place</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Game day cheat sheet · Formation diagrams · Ask any question · Weekly email generator · One screen coaches live on</div>
+        </div>
+
+        <div style={{background:'#0d0d0d',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>ASK ANYTHING — Plain English, Instant Answer</div>
+          <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:8}}>
+            {quickQs.map(q2=><button key={q2} onClick={()=>ask(q2)} style={{padding:'5px 9px',background:'#111',border:'0.5px solid #252525',borderRadius:14,color:'#9ca3af',fontSize:9,cursor:'pointer'}}>{q2}</button>)}
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&ask(q)} placeholder="Any coach can type any question here..." style={{flex:1,background:'#111',border:'0.5px solid #06b6d4',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/>
+            <button onClick={()=>ask(q)} disabled={load||!q.trim()} style={{padding:'10px 18px',background:load||!q.trim()?'#111':'#0c1a3a',border:`0.5px solid ${load||!q.trim()?'#252525':'#06b6d4'}`,borderRadius:8,color:load||!q.trim()?'#555':'#06b6d4',fontWeight:700,fontSize:13,cursor:'pointer'}}>{load?'...':'Ask'}</button>
+          </div>
+          {ans&&<div style={{marginTop:10,background:'#111',border:'0.5px solid #06b6d4',borderRadius:6,padding:12}}><div style={{fontSize:8,fontWeight:700,color:'#06b6d4',marginBottom:4,letterSpacing:1}}>ANSWER</div><div style={{fontSize:13,color:'#ccc',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{ans}</div></div>}
+        </div>
+
+        <div style={{display:'flex',gap:4,marginBottom:12}}>
+          {[['cheatsheet','Game Day Sheet'],['formations','Formation Guide'],['weeklyemail','Weekly Email']].map(([k,l])=><button key={k} onClick={()=>setSection(k)} style={{padding:'8px 14px',background:section===k?'#14532d':'#0d0d0d',border:`0.5px solid ${section===k?'#22c55e':'#252525'}`,borderRadius:6,color:section===k?'#22c55e':'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>)}
+        </div>
+
+        {section==='cheatsheet'&&(
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+            <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:8,letterSpacing:1}}>CALL EVERY PLAY</div>
+              {[['Baltimore','Any down any hash — +1.8 EPA'],['Post','1st down left hash — +1.4 EPA'],['Stick','Every series never fails — +0.8 EPA'],['Four Verts','Deep shot showcase — +1.9 EPA'],['Verticals','Winning big plays — +2.1 EPA']].map(([p,n])=><div key={p} style={{padding:'6px 0',borderBottom:'0.5px solid #1d3a1d'}}><div style={{fontSize:11,fontWeight:700,color:'#22c55e'}}>{p}</div><div style={{fontSize:8,color:'#555'}}>{n}</div></div>)}
+            </div>
+            <div style={{background:'#0a0a0a',border:'0.5px solid #252525',borderRadius:8,padding:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#F0B429',marginBottom:8,letterSpacing:1}}>SITUATION CALLS</div>
+              {[['1st & 10','Baltimore or Post'],['2nd & Med','Stick or Out'],['3rd & Short','Stick — 100%'],['3rd & Long','Four Verts or Post'],['Red Zone','Install package NOW'],['2 Minute','Stick → Out → Baltimore'],['Down 7','Four Verts or Verticals'],['Up 7','Stick → RPO → clock']].map(([sit,call])=><div key={sit} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'0.5px solid #1a1a1a'}}><span style={{fontSize:9,color:'#555'}}>{sit}</span><span style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{call}</span></div>)}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <div style={{background:'#1a0404',border:'1px solid #dc262633',borderRadius:8,padding:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#dc2626',marginBottom:6}}>NEVER CALL</div>
+                {[['Sail','0% · -0.6 EPA · drill only'],['Fade','0% · -0.8 EPA · drill only'],['Red Zone live','No package installed yet']].map(([p,n])=><div key={p} style={{padding:'5px 0',borderBottom:'0.5px solid #2a0404'}}><div style={{fontSize:11,fontWeight:700,color:'#dc2626'}}>{p}</div><div style={{fontSize:8,color:'#7f1d1d'}}>{n}</div></div>)}
+              </div>
+              <div style={{background:'#0c0a06',border:'0.5px solid #2a1a00',borderRadius:8,padding:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#F0B429',marginBottom:6}}>QB ROTATION</div>
+                {[['Cooper','Starts every game'],['Cooper','Deep routes 3rd down'],['Ben','Short package reps'],['NEVER','Ben on deep 3rd down']].map(([qb,note],i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'0.5px solid #1a1a00'}}><span style={{fontSize:9,color:qb==='NEVER'?'#dc2626':qb==='Cooper'?'#22c55e':'#F0B429',fontWeight:700}}>{qb}</span><span style={{fontSize:9,color:'#555'}}>{note}</span></div>)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {section==='formations'&&(
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            {formations.map(f=>(
+              <div key={f.name} style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12,cursor:'pointer'}} onClick={()=>ask(`Explain exactly how to run the ${f.name} route concept and what the QB reads step by step`)}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                  <div><span style={{fontSize:13,fontWeight:700,color:'#22c55e'}}>{f.name}</span><span style={{fontSize:8,color:'#555',marginLeft:8}}>{f.type}</span></div>
+                  <span style={{fontSize:10,fontWeight:700,color:'#22c55e',background:'#14532d',padding:'2px 7px',borderRadius:4}}>EPA {f.epa}</span>
+                </div>
+                <div style={{fontSize:11,color:'#9ca3af',lineHeight:1.5}}>{f.desc}</div>
+                <div style={{fontSize:8,color:'#444',marginTop:4}}>Tap for QB read breakdown ↗</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {section==='weeklyemail'&&(
+          <WeeklyEmailGen/>
+        )}
+      </div>
+    )
+  }
+
+  const WeeklyEmailGen=()=>{
+    const [email,setEmail]=React.useState('')
+    const [subj,setSubj]=React.useState('')
+    const [load,setLoad]=React.useState(false)
+    const [type,setType]=React.useState('weekly')
+    const types=[['weekly','Weekly Report'],['practice','Practice Plan'],['showcase','Showcase Prep'],['parents','Parent Update']]
+    const gen=async()=>{
+      setLoad(true);setEmail('');setSubj('')
+      const prompts={
+        weekly:'Write a weekly football analytics report email for Westfield Shamrocks coaching staff. Professional tone. Include: session summary (Cooper 75% comp 5/12, Ben 55% comp 5/12), top concepts (Baltimore Post Stick all 100%), cut list (Sail Fade 0%), priority for next practice (red zone package install), and Cooper projection update (hash fix = RTG 96, redzone fix = RTG 102). Sign off as Westfield Analytics Staff.',
+        practice:'Write a practice plan email for Westfield Shamrocks coaching staff. Include: focus for the session (red zone install and hash routes), specific drills (Cooper hash 10 reps each side, Ben flat release 20 reps), concept rotation (Baltimore Post Stick must get reps every practice), and goal for the session (both QBs above 80% comp). Professional and direct.',
+        showcase:'Write a college showcase preparation email for Westfield Shamrocks coaches. Include: Cooper introduction talking points for college coaches (84% comp RTG87 deep ball 88% vs NFL 52%), which plays to feature (Baltimore Post Four Verts for Cooper), talking points about his projection (hash fix = D2/D3 scholarship, redzone fix = D1-AA/FCS), and what college coaches care about seeing. Make it feel like a D1 program prep memo.',
+        parents:'Write a positive parent update email for Westfield Shamrocks families. Highlight team progress, mention Cooper Melvin\'s strong season (84% completion, college showcase ready), mention Ben Kooi\'s improvement trend, explain what the coaching staff is working on, and build excitement for the upcoming season. Upbeat and family-friendly tone. No technical jargon.'
+      }
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails. First line is the subject line starting with Subject:',messages:[{role:'user',content:prompts[type]}]})})
+        const d=await r.json()
+        const text=d.content?.[0]?.text||'Error'
+        const lines=text.split('\n')
+        setSubj(lines[0].replace(/^Subject:\s*/i,'').replace(/\*\*/g,'').trim()||'Westfield Shamrocks Update')
+        setEmail(lines.slice(1).join('\n').trim())
+      }catch(e){setEmail('Connection error.')}
+      setLoad(false)
+    }
+    return(
+      <div>
+        <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
+          {types.map(([k,l])=><button key={k} onClick={()=>setType(k)} style={{padding:'7px 12px',background:type===k?'#14532d':'#0d0d0d',border:`0.5px solid ${type===k?'#22c55e':'#252525'}`,borderRadius:6,color:type===k?'#22c55e':'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>)}
+        </div>
+        <button onClick={gen} disabled={load} style={{width:'100%',padding:'12px',background:load?'#111':'#14532d',border:`0.5px solid ${load?'#252525':'#22c55e'}`,borderRadius:8,color:load?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer',marginBottom:10}}>
+          {load?'Writing from your season data...':'📧 GENERATE EMAIL'}
+        </button>
+        {email&&(
+          <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:14}}>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SUBJECT</div><div style={{fontSize:13,fontWeight:700,color:'#ccc'}}>{subj}</div></div>
+            <textarea value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'10px',fontSize:12,outline:'none',minHeight:200,resize:'none',boxSizing:'border-box',lineHeight:1.7}}/>
+            <button onClick={()=>window.open(`mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(email)}`)} style={{width:'100%',marginTop:8,padding:'11px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>📧 OPEN IN MAIL APP</button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
