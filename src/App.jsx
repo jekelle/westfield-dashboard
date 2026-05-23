@@ -1586,7 +1586,7 @@ function Card({ title, titleClr, children, style = {} }) {
               ))}
             </div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}><PracticeTimer/>
             <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12}}>
               <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:6,letterSpacing:1}}>SELECTED: {selected.length} coaches</div>
               {selCoaches.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>{selCoaches.map(x=><span key={x.id} style={{background:x.col+'22',color:x.col,fontSize:8,fontWeight:700,padding:'2px 7px',borderRadius:4,border:`0.5px solid ${x.col}33`}}>{x.name}</span>)}</div>}
@@ -4035,6 +4035,237 @@ function Card({ title, titleClr, children, style = {} }) {
                     <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{aiInsight}</div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
+  const PracticeTimer=()=>{
+    const [mins,setMins]=React.useState(12)
+    const [secs,setSecs]=React.useState(0)
+    const [running,setRunning]=React.useState(false)
+    const [period,setPeriod]=React.useState(1)
+    const [log,setLog]=React.useState([])
+    const intervalRef=React.useRef(null)
+    React.useEffect(()=>{
+      if(running){
+        intervalRef.current=setInterval(()=>{
+          setSecs(s=>{
+            if(s===0){
+              setMins(m=>{
+                if(m===0){
+                  setRunning(false)
+                  setPeriod(p=>p+1)
+                  setLog(l=>[...l,{period,time:new Date().toLocaleTimeString(),label:'Period complete'}])
+                  setMins(12);setSecs(0)
+                  return 12
+                }
+                return m-1
+              })
+              return 59
+            }
+            return s-1
+          })
+        },1000)
+      } else {clearInterval(intervalRef.current)}
+      return()=>clearInterval(intervalRef.current)
+    },[running])
+    const reset=()=>{setRunning(false);setMins(12);setSecs(0)}
+    const pct=((mins*60+secs)/(12*60))*100
+    return(
+      <div style={{background:'#0d0d0d',border:`1px solid ${running?'#22c55e':'#252525'}`,borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:10,letterSpacing:1}}>⏱ PRACTICE PERIOD TIMER — Period {period}</div>
+        <div style={{textAlign:'center',marginBottom:10}}>
+          <div style={{fontSize:52,fontWeight:700,color:running?'#22c55e':mins<2?'#dc2626':'#fff',lineHeight:1,fontFamily:'monospace'}}>
+            {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
+          </div>
+          <div style={{height:4,background:'#1a1a1a',borderRadius:2,marginTop:8,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${pct}%`,background:mins<2?'#dc2626':'#22c55e',borderRadius:2,transition:'width 1s'}}/>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,marginBottom:8}}>
+          <button onClick={()=>setRunning(!running)} style={{flex:2,padding:'11px',background:running?'#1a0404':'#14532d',border:`1px solid ${running?'#dc2626':'#22c55e'}`,borderRadius:7,color:running?'#dc2626':'#22c55e',fontWeight:700,fontSize:14,cursor:'pointer'}}>
+            {running?'⏸ PAUSE':'▶ START'}
+          </button>
+          <button onClick={reset} style={{flex:1,padding:'11px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:7,color:'#555',fontSize:12,cursor:'pointer'}}>Reset</button>
+          <button onClick={()=>{setPeriod(p=>p+1);setMins(12);setSecs(0);setRunning(false);setLog(l=>[...l,{period,time:new Date().toLocaleTimeString(),label:'Period skipped'}])}} style={{flex:1,padding:'11px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:7,color:'#555',fontSize:11,cursor:'pointer'}}>Next</button>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:4}}>
+          {[10,12,15,20].map(m=>(
+            <button key={m} onClick={()=>{setMins(m);setSecs(0);setRunning(false)}} style={{padding:'6px',background:mins===m&&secs===0?'#14532d':'#111',border:`0.5px solid ${mins===m&&secs===0?'#22c55e':'#252525'}`,borderRadius:4,color:mins===m&&secs===0?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{m} min</button>
+          ))}
+        </div>
+        {log.length>0&&<div style={{marginTop:8,fontSize:8,color:'#444'}}>{log.slice(-3).map((l,i)=><div key={i}>Period {l.period} — {l.label} at {l.time}</div>)}</div>}
+      </div>
+    )
+  }
+
+
+  const PenaltyTracker=({isMob})=>{
+    const [penalties,setPenalties]=React.useState([])
+    const types=['False Start','Holding','Pass Interference','Offsides','Illegal Formation','Delay of Game','Unsportsmanlike','Face Mask','Encroachment','Illegal Motion']
+    const addPenalty=(type)=>{
+      setPenalties(p=>[...p,{id:Date.now(),type,side:type==='Holding'||type==='False Start'||type==='Illegal Formation'||type==='Delay of Game'||type==='Illegal Motion'?'Offense':'Defense',time:new Date().toLocaleTimeString()}])
+    }
+    const off=penalties.filter(p=>p.side==='Offense')
+    const def=penalties.filter(p=>p.side==='Defense')
+    const top=Object.entries(penalties.reduce((a,p)=>{a[p.type]=(a[p.type]||0)+1;return a},{})).sort((a,b)=>b[1]-a[1]).slice(0,3)
+    return(
+      <div style={{background:'#0d0d0d',border:'1px solid #dc2626',borderRadius:8,padding:12,marginBottom:10}}>
+        <div style={{fontSize:9,fontWeight:700,color:'#dc2626',marginBottom:8,letterSpacing:1}}>🚩 PENALTY TRACKER — Tap to Log</div>
+        <div style={{display:'flex',gap:12,marginBottom:8}}>
+          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:22,fontWeight:700,color:'#dc2626'}}>{off.length}</div><div style={{fontSize:8,color:'#555'}}>Offense</div></div>
+          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:22,fontWeight:700,color:'#F0B429'}}>{def.length}</div><div style={{fontSize:8,color:'#555'}}>Defense</div></div>
+          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:22,fontWeight:700,color:'#9ca3af'}}>{penalties.length}</div><div style={{fontSize:8,color:'#555'}}>Total</div></div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:isMob?'1fr 1fr':'repeat(5,1fr)',gap:4,marginBottom:8}}>
+          {types.map(type=>(
+            <button key={type} onClick={()=>addPenalty(type)}
+              style={{padding:'7px 4px',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#9ca3af',fontSize:8,fontWeight:700,cursor:'pointer',textAlign:'center',lineHeight:1.3}}>
+              {type}
+            </button>
+          ))}
+        </div>
+        {top.length>0&&(
+          <div style={{fontSize:8,color:'#555'}}>
+            Top: {top.map(([type,count])=>`${type} ×${count}`).join(' · ')}
+          </div>
+        )}
+        {penalties.length>0&&(
+          <button onClick={()=>setPenalties([])} style={{marginTop:6,padding:'4px 8px',background:'#1a0404',border:'0.5px solid #dc262644',borderRadius:4,color:'#dc2626',fontSize:7,cursor:'pointer'}}>Clear all penalties</button>
+        )}
+      </div>
+    )
+  }
+
+
+  const CoachingPointsTab=()=>{
+    const [points,setPoints]=React.useState([])
+    const [player,setPlayer]=React.useState('Cooper Melvin')
+    const [coach,setCoach]=React.useState('QB Coach')
+    const [point,setPoint]=React.useState('')
+    const [repGrade,setRepGrade]=React.useState('Good')
+    const [session,setSession]=React.useState('Today')
+    const [filterPlayer,setFilterPlayer]=React.useState('All')
+    const [repOfDay,setRepOfDay]=React.useState(null)
+    const [aiSummary,setAiSummary]=React.useState('')
+    const [aiLoad,setAiLoad]=React.useState(false)
+    const players=['Cooper Melvin','Ben Kooi','WR1','WR2','RB1','OL Captain','Team']
+    const coaches=['QB Coach','WR Coach','RB Coach','OL Coach','DC','DB Coach','DL Coach','Head Coach']
+    const grades=['Elite Rep','Good Rep','Needs Work','Critical Fix']
+    const gradeColor=g=>g==='Elite Rep'?'#22c55e':g==='Good Rep'?'#d97706':g==='Needs Work'?'#ea580c':'#dc2626'
+    const addPoint=()=>{
+      if(!point.trim())return
+      setPoints(p=>[...p,{id:Date.now(),player,coach,point,repGrade,session,time:new Date().toLocaleTimeString()}])
+      setPoint('')
+    }
+    const filtered=filterPlayer==='All'?points:points.filter(p=>p.player===filterPlayer)
+    const markRepOfDay=(p)=>setRepOfDay(p)
+    const summarize=async()=>{
+      if(!points.length)return
+      setAiLoad(true)
+      const summary=points.map(p=>`[${p.coach}] ${p.player}: ${p.repGrade} — ${p.point}`).join('\n')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:'You are a football coordinator summarizing coaching point logs from a practice session. Group by player. Give the top 2 teaching priorities for each player. Then give 3 practice drill recommendations for the next session. Be direct.',messages:[{role:'user',content:`Coaching points from today:\n${summary}\nSummarize top priorities and next session drill recommendations.`}]})})
+        const d=await r.json();setAiSummary(d.content?.[0]?.text||'Error')
+      }catch(e){setAiSummary('Connection error.')}
+      setAiLoad(false)
+    }
+    const playerTotals=players.map(p=>({player:p,total:points.filter(x=>x.player===p).length,elite:points.filter(x=>x.player===p&&x.repGrade==='Elite Rep').length,fix:points.filter(x=>x.player===p&&x.repGrade==='Critical Fix').length})).filter(x=>x.total>0)
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📝 COACHING POINT LOGGER — Tag Every Teaching Moment</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Any coach · Any player · Any rep · AI summarizes top priorities after practice · Rep of the day recognition</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:12}}>
+          <div>
+            <div style={{background:'#0d0d0d',border:'0.5px solid #2a1a00',borderRadius:8,padding:12,marginBottom:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8,letterSpacing:1}}>LOG A COACHING POINT</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:6}}>
+                <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>PLAYER</div>
+                  <select value={player} onChange={e=>setPlayer(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11}}>
+                    {players.map(p=><option key={p} value={p}>{p}</option>)}
+                  </select></div>
+                <div><div style={{fontSize:7,color:'#555',marginBottom:3}}>YOUR ROLE</div>
+                  <select value={coach} onChange={e=>setCoach(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11}}>
+                    {coaches.map(co=><option key={co} value={co}>{co}</option>)}
+                  </select></div>
+              </div>
+              <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>REP GRADE</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3}}>
+                  {grades.map(g=>(
+                    <button key={g} onClick={()=>setRepGrade(g)} style={{padding:'6px',background:repGrade===g?gradeColor(g)+'22':'#111',border:`0.5px solid ${repGrade===g?gradeColor(g):'#252525'}`,borderRadius:4,color:repGrade===g?gradeColor(g):'#555',fontSize:8,fontWeight:700,cursor:'pointer'}}>{g}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>COACHING POINT</div>
+                <textarea value={point} onChange={e=>setPoint(e.target.value)} placeholder="What did you see? Be specific — footwork, release, route, decision..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:12,outline:'none',minHeight:70,resize:'none',boxSizing:'border-box',lineHeight:1.5}}/>
+              </div>
+              <button onClick={addPoint} disabled={!point.trim()} style={{width:'100%',padding:'11px',background:'#2a1a00',border:'1px solid #F0B429',borderRadius:7,color:'#F0B429',fontWeight:700,fontSize:13,cursor:'pointer'}}>+ LOG COACHING POINT</button>
+            </div>
+            {playerTotals.length>0&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8}}>PLAYER SUMMARY</div>
+                {playerTotals.map(pt=>(
+                  <div key={pt.player} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'0.5px solid #1a1a1a'}}>
+                    <span style={{fontSize:10,color:'#ccc',fontWeight:700}}>{pt.player}</span>
+                    <div style={{display:'flex',gap:6}}>
+                      <span style={{fontSize:9,color:'#22c55e'}}>{pt.elite} elite</span>
+                      <span style={{fontSize:9,color:'#dc2626'}}>{pt.fix} fix</span>
+                      <span style={{fontSize:9,color:'#555'}}>{pt.total} total</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {points.length>=3&&(
+              <button onClick={summarize} disabled={aiLoad} style={{width:'100%',padding:'11px',background:aiLoad?'#111':'#07070f',border:`1px solid ${aiLoad?'#252525':'#06b6d4'}`,borderRadius:7,color:aiLoad?'#555':'#06b6d4',fontWeight:700,fontSize:11,cursor:'pointer'}}>
+                {aiLoad?'Analyzing coaching points...':'🤖 AI Practice Summary — Top priorities + drills for next session'}
+              </button>
+            )}
+            {aiSummary&&(
+              <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginTop:8}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>AI PRACTICE SUMMARY</div>
+                <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{aiSummary}</div>
+              </div>
+            )}
+          </div>
+          <div>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:8}}>
+              {['All',...players.filter(p=>points.some(x=>x.player===p))].map(p=>(
+                <button key={p} onClick={()=>setFilterPlayer(p)} style={{padding:'4px 8px',background:filterPlayer===p?'#2a1a00':'#0d0d0d',border:`0.5px solid ${filterPlayer===p?'#F0B429':'#252525'}`,borderRadius:14,color:filterPlayer===p?'#F0B429':'#555',fontSize:8,cursor:'pointer'}}>{p}</button>
+              ))}
+            </div>
+            {repOfDay&&(
+              <div style={{background:'#14532d',border:'1px solid #22c55e',borderRadius:8,padding:'10px 14px',marginBottom:8,display:'flex',gap:10,alignItems:'center'}}>
+                <span style={{fontSize:16}}>⭐</span>
+                <div><div style={{fontSize:10,fontWeight:700,color:'#22c55e'}}>REP OF THE DAY — {repOfDay.player}</div><div style={{fontSize:11,color:'#ccc',marginTop:2}}>{repOfDay.point}</div></div>
+                <button onClick={()=>setRepOfDay(null)} style={{marginLeft:'auto',background:'transparent',border:'none',color:'#555',cursor:'pointer',fontSize:12,flexShrink:0}}>✕</button>
+              </div>
+            )}
+            {filtered.length===0?(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #1a1a1a',borderRadius:8,padding:28,textAlign:'center',color:'#333',fontSize:12}}>No coaching points yet — start tagging reps as you watch film or run practice</div>
+            ):(
+              <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                {filtered.map(p=>(
+                  <div key={p.id} style={{background:'#0d0d0d',border:`0.5px solid ${gradeColor(p.repGrade)}33`,borderRadius:8,padding:'10px 12px',borderLeft:`3px solid ${gradeColor(p.repGrade)}`}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                        <span style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{p.player}</span>
+                        <span style={{background:gradeColor(p.repGrade)+'22',color:gradeColor(p.repGrade),fontSize:8,fontWeight:700,padding:'1px 6px',borderRadius:4}}>{p.repGrade}</span>
+                        <span style={{fontSize:8,color:'#555'}}>{p.coach}</span>
+                        <span style={{fontSize:7,color:'#333'}}>{p.time}</span>
+                      </div>
+                      <button onClick={()=>markRepOfDay(p)} title="Mark as Rep of the Day" style={{background:'transparent',border:'none',color:repOfDay?.id===p.id?'#F0B429':'#333',cursor:'pointer',fontSize:13,flexShrink:0}}>★</button>
+                    </div>
+                    <div style={{fontSize:12,color:'#ccc',lineHeight:1.5}}>{p.point}</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
