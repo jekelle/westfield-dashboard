@@ -913,7 +913,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'0.9fr 1.1fr',gap:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'0.9fr 1.1fr',gap:isMobile?8:10}}>
           <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12}}>
             <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8,letterSpacing:1}}>📋 LOG PLAY</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:7}}>
