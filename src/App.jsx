@@ -894,7 +894,8 @@ function Card({ title, titleClr, children, style = {} }) {
       setLoad(false)
     }
     const logPlay=()=>{
-      setPlays(p=>[...p,{id:Date.now(),qb,con,res,yds:Number(yds)||0,dn,dist,hash,pres,sep,time:new Date().toLocaleTimeString()}])
+      const newPlay={id:Date.now(),qb,con,res,yds:Number(yds)||0,dn,dist,hash,pres,sep,time:new Date().toLocaleTimeString()}
+      setPlays(prev=>{const next=[...prev,newPlay];checkPersonalBest(next);setUndoAlert({msg:`${newPlay.con} logged`,fn:()=>setPlays(pp=>pp.filter(p=>p.id!==newPlay.id))});setTimeout(()=>setUndoAlert(null),6000);return next})
       setYds('')
     }
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
@@ -3494,7 +3495,7 @@ function Card({ title, titleClr, children, style = {} }) {
         </div>
         <div style={{flex:1,overflowY:'auto',background:'#050505'}}>
           {all.map(t=>(
-            <button key={t.k} onClick={()=>{setTab(t.k);setOpen(false)}} style={{width:'100%',padding:'16px',background:tab===t.k?'#0a1a0a':'transparent',border:'none',borderBottom:'0.5px solid #1a1a1a',color:tab===t.k?'#22c55e':'#9ca3af',fontSize:15,fontWeight:tab===t.k?700:400,cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <button key={t.k} onClick={()=>{switchTab(t.k);setOpen(false)}} style={{width:'100%',padding:'16px',background:tab===t.k?'#0a1a0a':'transparent',border:'none',borderBottom:'0.5px solid #1a1a1a',color:tab===t.k?'#22c55e':'#9ca3af',fontSize:15,fontWeight:tab===t.k?700:400,cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               {t.l}
               {tab===t.k&&<span style={{color:'#22c55e',fontSize:11,background:'#14532d',padding:'2px 8px',borderRadius:4}}>active</span>}
             </button>
@@ -3502,6 +3503,23 @@ function Card({ title, titleClr, children, style = {} }) {
         </div>
       </div>
     )
+  }
+
+
+  const AnimCounter=({val,suffix='',duration=700})=>{
+    const [cur,setCur]=React.useState(0)
+    React.useEffect(()=>{
+      const num=parseFloat(String(val).replace('%',''))
+      if(isNaN(num)){setCur(val);return}
+      let start=0,step=num/(duration/16)
+      const t=setInterval(()=>{
+        start+=step
+        if(start>=num){setCur(val);clearInterval(t)}
+        else{const rounded=Number.isInteger(num)?Math.round(start):Math.round(start*10)/10;setCur(rounded+suffix)}
+      },16)
+      return()=>clearInterval(t)
+    },[val])
+    return React.createElement('span',null,cur)
   }
 
   return (
