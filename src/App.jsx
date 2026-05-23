@@ -2361,6 +2361,13 @@ function Card({ title, titleClr, children, style = {} }) {
   }
 
 
+
+
+
+
+
+
+
   const QuickCallTab=()=>{
     const [dn,setDn]=React.useState('1st')
     const [dist,setDist]=React.useState('10')
