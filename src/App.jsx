@@ -3523,6 +3523,306 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  // ══════════════════════════════════════════════════════
+  // POSITION COACH HUB — Every coach gets their own AI tool
+  // Per down · Per situation · Per matchup
+  // ══════════════════════════════════════════════════════
+  const PositionCoachTab=()=>{
+    const [unit,setUnit]=React.useState('WR')
+    const [dn,setDn]=React.useState('1st')
+    const [dist,setDist]=React.useState('10')
+    const [zone,setZone]=React.useState('Open Field')
+    const [coverage,setCoverage]=React.useState('Cover 2')
+    const [score,setScore]=React.useState('Tied')
+    const [question,setQuestion]=React.useState('')
+    const [answer,setAnswer]=React.useState('')
+    const [load,setLoad]=React.useState(false)
+    const [msgs,setMsgs]=React.useState([])
+    const chatRef=React.useRef(null)
+
+    const units=[
+      {k:'WR', label:'WR Coach',     icon:'🏃', col:'#06b6d4', side:'O',
+       role:'Wide Receiver Coach',
+       context:'Focus on route running, releases vs press, separation, and which WR to target on each down and distance. Our WR1 averages 3.8 yards of separation. WR2 averages 3.2 yards. Both struggle on Sail and Fade routes which are cut from the script.',
+       quickQs:['Which routes should WR1 run on 3rd and short?','How do we attack press coverage right now?','What does WR1 need to work on before next practice?','Which concept gives WR1 the best matchup vs Cover 2?','When should we motion WR2 to create separation?']},
+      {k:'RB', label:'RB Coach',     icon:'💨', col:'#22c55e', side:'O',
+       role:'Running Back Coach',
+       context:'Focus on run-pass balance, RB route concepts, screen game, RPO reads, pass protection, and when to use the RB as a check-down. RPO Glance is 100% efficient. Screen game is developing. Cooper checks down to RB in pressure situations.',
+       quickQs:['When do we hand off vs throw on RPO Glance?','What is the best screen concept for our RB?','How should the RB align on 3rd and long to help Cooper?','When is the RB a better option than WR1 on this down?','What pass protection call do we need vs a 5-man blitz?']},
+      {k:'OL', label:'OL Coach',     icon:'🧱', col:'#d97706', side:'O',
+       role:'Offensive Line Coach',
+       context:'Focus on protection calls, pressure management, stunt pick-ups, and OL grades. Current pressure rate is 28% — target is 20% or below. The 5/12 INT came after a protection breakdown. Clean pocket rate is 72%. Cooper performs significantly better in a clean pocket.',
+       quickQs:['What protection call do we need vs a 4-man rush?','How do we handle a LB walking into the box pre-snap?','What stunt combination is giving us the most trouble?','How do we protect Cooper on 3rd and long pass plays?','What OL adjustment improves our pressure rate from 28% to 20%?']},
+      {k:'QB', label:'QB Coach',     icon:'🎯', col:'#22c55e', side:'O',
+       role:'Quarterback Coach',
+       context:'Focus on QB reads, footwork, release mechanics, and decision-making for both Cooper and Ben. Cooper: 84% comp, TTT 2.0s, hash accuracy 73%, deep ball 88%. Ben: 70% comp, TTT 1.9s, hash 60%, deep ball 50%, high release mechanics issue.',
+       quickQs:['What is Cooper\'s single biggest mechanical issue to fix?','When do we put Ben in and what plays do we run with him?','How does Cooper read Cover 3 on the Post concept?','What footwork drill fixes Ben\'s high release mechanics?','What should Cooper work on before the next showcase?']},
+      {k:'DC', label:'DC / LB Coach',icon:'🛡️', col:'#dc2626', side:'D',
+       role:'Defensive Coordinator and Linebacker Coach',
+       context:'Focus on defensive coverage calls, linebacker assignments, blitz packages, and adjustments per offensive formation and down. Against our own offense: Baltimore beats single high, Post beats Cover 3, Stick beats zone. Red zone is our biggest offensive gap.',
+       quickQs:['What coverage do we call vs a spread 4-wide set on 3rd and 5?','How do we stop the Post route from beating our Cover 3?','What blitz package creates pressure without giving up the deep ball?','How do our LBs align vs RPO Glance read plays?','What is the best coverage to slow down a QB like Cooper?']},
+      {k:'DB', label:'DB Coach',     icon:'🔒', col:'#7c3aed', side:'D',
+       role:'Defensive Back and Secondary Coach',
+       context:'Focus on coverage assignments, man vs zone decisions, press coverage vs off coverage, and matchup calls based on WR tendencies. Against our offense: WR1 averages 3.8 yards separation and excels on Verticals and Post. WR2 is most effective on Stick and Smash.',
+       quickQs:['Do we press or play off WR1 on 1st and 10?','How do we take away the Post route from Cooper?','What coverage rotation stops the deep ball on 3rd and long?','How do we defend the RPO when Cooper can run or throw?','Which DB matchup gives us the best chance on 3rd and short?']},
+      {k:'DL', label:'DL Coach',     icon:'💥', col:'#ef4444', side:'D',
+       role:'Defensive Line Coach',
+       context:'Focus on pass rush packages, gap assignments, stunt combinations, run defense, and creating pressure on the QB. Cooper\'s pressure rate is 28% — the DL needs to get that above 35% on passing downs. Cooper is mobile so contain is essential.',
+       quickQs:['What pass rush move beats a slide protection on 3rd and long?','How do we set the edge vs a QB who can escape the pocket?','What stunt combination creates the fastest pressure path?','How do our DL align vs a run-heavy personnel on 1st down?','What gap assignment stops the RPO keeper read?']},
+      {k:'ST', label:'ST Coach',     icon:'🏉', col:'#a78bfa', side:'ST',
+       role:'Special Teams Coordinator',
+       context:'Focus on punt decisions, kickoff strategy, field goal calls, onside kick timing, fake punt and fake field goal calls, and return game setups. All decisions should account for field position, score differential, time remaining, and opponent tendencies.',
+       quickQs:['Do we punt or go for it on 4th and 4 from our own 38?','When is an onside kick the right call vs a regular kickoff?','What fake punt formation gives us the best surprise element?','How do we scheme a kickoff when leading by 7 with 4 min left?','What field goal range decision do we make on 4th and 6 from the 29?']},
+    ]
+
+    const sel=units.find(u=>u.k===unit)||units[0]
+
+    const SITUATIONS={
+      '1st':{'10':'Standard down — establish run-pass balance and set up 2nd and manageable.','5-7':'Short — attack with your best concept immediately.','1-4':'Power down — run game or quick pass to set up conversion.'},
+      '2nd':{'10':'Need to get something — avoid 3rd and long at all costs.','5-7':'Manageable — mix concepts to keep defense guessing.','1-4':'Short yardage — call your most reliable high-percentage play.'},
+      '3rd':{'10':'Long — need a chunk play or punt. High pressure.','5-7':'Medium — conversion needed. Call what the data says works.','1-4':'Short — run it or quick game. Stick is 100%.'},
+      '4th':{'10':'Desperation — either go for it with your best play or punt.','5-7':'Decision down — field position matters. AI will help decide.','1-4':'Go or kick — know your numbers before you decide.'},
+    }
+
+    const situationNote=SITUATIONS[dn]?.[dist]||''
+
+    const buildSystemPrompt=()=>{
+      return `You are the ${sel.role} for Westfield Shamrocks high school football. You give direct, specific coaching advice for your position group. Season data: ${CTX} Your unit focus: ${sel.context} Keep answers under 4 sentences. Always recommend a specific play, technique, or adjustment. Never be vague. This is game day — coaches need clear decisions.`
+    }
+
+    const buildUserMsg=(q)=>{
+      return `Situation: ${dn} and ${dist}, ${zone}, score ${score}, coverage ${sel.side==='D'?coverage:'unknown'}. Question: ${q}`
+    }
+
+    const ask=async(q)=>{
+      const msg=q||question
+      if(!msg.trim()||load)return
+      setLoad(true)
+      const um={role:'user',content:msg}
+      const newMsgs=[...msgs,um]
+      setMsgs(newMsgs)
+      setQuestion('')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-20250514',
+            max_tokens:200,
+            system:buildSystemPrompt(),
+            messages:newMsgs.map(m=>({role:m.role,content:buildUserMsg(m.content)}))
+          })
+        })
+        const d=await r.json()
+        setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
+      }catch(e){
+        setMsgs(p=>[...p,{role:'assistant',content:'Connection error — check API access.'}])
+      }
+      setLoad(false)
+    }
+
+    React.useEffect(()=>{
+      if(chatRef.current)chatRef.current.scrollIntoView({behavior:'smooth'})
+    },[msgs])
+
+    // Clear chat when unit changes
+    React.useEffect(()=>{setMsgs([]);setAnswer('')},[unit])
+
+    const offenseUnits=units.filter(u=>u.side==='O')
+    const defenseUnits=units.filter(u=>u.side==='D')
+    const stUnits=units.filter(u=>u.side==='ST')
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>👥 POSITION COACH HUB — Every Coach Gets Their Own AI Tool</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Select your unit · Set the situation · Ask anything · Get a direct answer based on your actual season data</div>
+        </div>
+
+        {/* Unit selector — grouped by side of ball */}
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:8,color:'#22c55e',fontWeight:700,letterSpacing:1,marginBottom:5}}>OFFENSE</div>
+          <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
+            {offenseUnits.map(u=>(
+              <button key={u.k} onClick={()=>setUnit(u.k)}
+                style={{padding:'9px 14px',background:unit===u.k?u.col+'22':'#0d0d0d',border:`1px solid ${unit===u.k?u.col:'#252525'}`,borderRadius:8,color:unit===u.k?u.col:'#555',fontSize:10,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5}}>
+                <span style={{fontSize:14}}>{u.icon}</span>{u.label}
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:8,color:'#dc2626',fontWeight:700,letterSpacing:1,marginBottom:5}}>DEFENSE</div>
+          <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
+            {defenseUnits.map(u=>(
+              <button key={u.k} onClick={()=>setUnit(u.k)}
+                style={{padding:'9px 14px',background:unit===u.k?u.col+'22':'#0d0d0d',border:`1px solid ${unit===u.k?u.col:'#252525'}`,borderRadius:8,color:unit===u.k?u.col:'#555',fontSize:10,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5}}>
+                <span style={{fontSize:14}}>{u.icon}</span>{u.label}
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:8,color:'#a78bfa',fontWeight:700,letterSpacing:1,marginBottom:5}}>SPECIAL TEAMS</div>
+          <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+            {stUnits.map(u=>(
+              <button key={u.k} onClick={()=>setUnit(u.k)}
+                style={{padding:'9px 14px',background:unit===u.k?u.col+'22':'#0d0d0d',border:`1px solid ${unit===u.k?u.col:'#252525'}`,borderRadius:8,color:unit===u.k?u.col:'#555',fontSize:10,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5}}>
+                <span style={{fontSize:14}}>{u.icon}</span>{u.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.4fr',gap:12}}>
+
+          {/* LEFT — Situation panel */}
+          <div>
+            <div style={{background:'#0d0d0d',border:`1px solid ${sel.col}`,borderRadius:10,padding:14,marginBottom:10}}>
+              <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:10,paddingBottom:8,borderBottom:`0.5px solid ${sel.col}33`}}>
+                <span style={{fontSize:20}}>{sel.icon}</span>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:sel.col}}>{sel.label}</div>
+                  <div style={{fontSize:8,color:'#555'}}>{sel.role}</div>
+                </div>
+              </div>
+
+              <div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>SET THE SITUATION</div>
+
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:7,color:'#444',marginBottom:3}}>DOWN</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3}}>
+                  {['1st','2nd','3rd','4th'].map(d=>(
+                    <button key={d} onClick={()=>setDn(d)} style={{padding:'7px 2px',background:dn===d?sel.col+'22':'#111',border:`0.5px solid ${dn===d?sel.col:'#252525'}`,borderRadius:4,color:dn===d?sel.col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{d}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:7,color:'#444',marginBottom:3}}>DISTANCE</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
+                  {['1-4','5-7','10'].map(d=>(
+                    <button key={d} onClick={()=>setDist(d)} style={{padding:'7px 2px',background:dist===d?sel.col+'22':'#111',border:`0.5px solid ${dist===d?sel.col:'#252525'}`,borderRadius:4,color:dist===d?sel.col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{d==='10'?'10+':d}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:7,color:'#444',marginBottom:3}}>FIELD ZONE</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
+                  {['Own End','Open Field','Red Zone'].map(z=>(
+                    <button key={z} onClick={()=>setZone(z)} style={{padding:'6px 2px',background:zone===z?sel.col+'22':'#111',border:`0.5px solid ${zone===z?sel.col:'#252525'}`,borderRadius:4,color:zone===z?sel.col:'#555',fontSize:8,fontWeight:700,cursor:'pointer',textAlign:'center'}}>{z}</button>
+                  ))}
+                </div>
+              </div>
+
+              {sel.side==='D'&&(
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:7,color:'#444',marginBottom:3}}>COVERAGE / FORMATION</div>
+                  <select value={coverage} onChange={e=>setCoverage(e.target.value)}
+                    style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>
+                    {['Cover 1 Man','Cover 2 Zone','Cover 3 Sky','Cover 4 Quarters','Cover 0 Blitz','Tampa 2','Quarters Rotate','Press Man','Base 4-3','Base 3-4','Nickel','Dime'].map(cv=>(
+                      <option key={cv} value={cv}>{cv}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:7,color:'#444',marginBottom:3}}>SCORE</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
+                  {['Down 7+','Tied','Up 7+'].map(s=>(
+                    <button key={s} onClick={()=>setScore(s)} style={{padding:'6px 2px',background:score===s?sel.col+'22':'#111',border:`0.5px solid ${score===s?sel.col:'#252525'}`,borderRadius:4,color:score===s?sel.col:'#555',fontSize:8,fontWeight:700,cursor:'pointer',textAlign:'center'}}>{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              {situationNote&&(
+                <div style={{background:sel.col+'11',border:`0.5px solid ${sel.col}33`,borderRadius:6,padding:8,marginBottom:10}}>
+                  <div style={{fontSize:7,color:sel.col,fontWeight:700,marginBottom:2,letterSpacing:1}}>SITUATION NOTE</div>
+                  <div style={{fontSize:10,color:'#9ca3af',lineHeight:1.5}}>{situationNote}</div>
+                </div>
+              )}
+
+              <div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>QUICK QUESTIONS — TAP TO ASK</div>
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                {sel.quickQs.map(q=>(
+                  <button key={q} onClick={()=>ask(q)}
+                    style={{padding:'8px 10px',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#9ca3af',fontSize:9,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{color:sel.col,fontSize:10,flexShrink:0}}>→</span>{q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT — Chat */}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{background:'#0d0d0d',border:`0.5px solid ${sel.col}33`,borderRadius:8,padding:'8px 12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div style={{fontSize:9,fontWeight:700,color:sel.col,letterSpacing:1}}>{sel.label.toUpperCase()} AI — {dn} & {dist} · {zone} · {score}</div>
+              {msgs.length>0&&<button onClick={()=>setMsgs([])} style={{padding:'3px 8px',background:'#1a0404',border:'0.5px solid #dc262644',borderRadius:4,color:'#dc2626',fontSize:8,cursor:'pointer'}}>Clear</button>}
+            </div>
+
+            <div style={{flex:1,background:'#090909',border:`0.5px solid ${sel.col}22`,borderRadius:8,padding:12,display:'flex',flexDirection:'column',gap:8,minHeight:380,maxHeight:480,overflowY:'auto'}}>
+              {msgs.length===0&&(
+                <div style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',height:'100%',gap:8,opacity:0.4}}>
+                  <span style={{fontSize:36}}>{sel.icon}</span>
+                  <div style={{fontSize:12,color:sel.col,fontWeight:700,textAlign:'center'}}>{sel.label} AI Ready</div>
+                  <div style={{fontSize:10,color:'#555',textAlign:'center',maxWidth:240}}>Tap a quick question or type your own. This AI knows your season data and answers for your specific unit and situation.</div>
+                </div>
+              )}
+              {msgs.map((m,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'88%',padding:'10px 13px',borderRadius:10,
+                    background:m.role==='user'?sel.col+'22':'#111',
+                    border:`0.5px solid ${m.role==='user'?sel.col+'44':'#252525'}`,
+                    borderBottomRightRadius:m.role==='user'?2:10,
+                    borderBottomLeftRadius:m.role==='assistant'?2:10}}>
+                    {m.role==='assistant'&&(
+                      <div style={{fontSize:8,fontWeight:700,color:sel.col,marginBottom:4,letterSpacing:1}}>{sel.label.toUpperCase()} AI</div>
+                    )}
+                    <div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{m.content}</div>
+                  </div>
+                </div>
+              ))}
+              {load&&(
+                <div style={{display:'flex'}}>
+                  <div style={{padding:'10px 13px',background:'#111',borderRadius:10,border:'0.5px solid #252525'}}>
+                    <div style={{fontSize:11,color:sel.col}}>Thinking as {sel.role}...</div>
+                  </div>
+                </div>
+              )}
+              <div ref={chatRef}/>
+            </div>
+
+            <div style={{display:'flex',gap:6}}>
+              <input
+                value={question}
+                onChange={e=>setQuestion(e.target.value)}
+                onKeyDown={e=>e.key==='Enter'&&ask(question)}
+                placeholder={`Ask the ${sel.label} anything about ${dn} & ${dist}...`}
+                style={{flex:1,background:'#111',border:`1px solid ${sel.col}44`,borderRadius:8,padding:'11px 14px',color:'#fff',fontSize:13,outline:'none'}}
+              />
+              <button onClick={()=>ask(question)} disabled={load||!question.trim()}
+                style={{padding:'11px 18px',background:load||!question.trim()?'#111':sel.col+'22',border:`0.5px solid ${load||!question.trim()?'#252525':sel.col}`,borderRadius:8,color:load||!question.trim()?'#555':sel.col,fontWeight:700,fontSize:13,cursor:load||!question.trim()?'default':'pointer'}}>
+                Ask
+              </button>
+            </div>
+
+            <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:6,padding:10}}>
+              <div style={{fontSize:8,fontWeight:700,color:'#22c55e',marginBottom:4,letterSpacing:1}}>HOW THIS WORKS</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+                {[['Set situation','Down, distance, zone, score — the AI knows where you are'],['Pick your unit','Each coach gets answers specific to their position group'],['Ask anything','Type or tap — AI answers from your real season data']].map(([t2,d])=>(
+                  <div key={t2} style={{textAlign:'center'}}>
+                    <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:3}}>{t2}</div>
+                    <div style={{fontSize:8,color:'#555',lineHeight:1.4}}>{d}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
