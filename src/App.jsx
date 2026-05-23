@@ -3376,92 +3376,6 @@ function Card({ title, titleClr, children, style = {} }) {
   }
 
 
-  const DataManagerTab=()=>{
-    const [counts,setCounts]=React.useState({})
-    const [status,setStatus]=React.useState('')
-    const keys=['gameday_plays','practice_plays','film_notes','scoreboard_plays','player_profiles','quick_favs','practice_checked']
-    const labels={'gameday_plays':'Game Day Plays','practice_plays':'Practice Plays','film_notes':'Film Notes','scoreboard_plays':'Scoreboard Plays','player_profiles':'Player Profiles','quick_favs':'Favorite Plays','practice_checked':'Practice Reps'}
-    const icons={'gameday_plays':'🏈','practice_plays':'📋','film_notes':'🎬','scoreboard_plays':'📊','player_profiles':'👤','quick_favs':'⭐','practice_checked':'✓'}
-    React.useEffect(()=>{
-      const load=async()=>{
-        const c2={}
-        for(const k of keys){
-          try{const r=await window.storage.get(`westfield_v1_${k}`);if(r&&r.value){const p=JSON.parse(r.value);c2[k]=Array.isArray(p)?p.length:typeof p==='object'?Object.keys(p).length:1}else c2[k]=0}catch(e){c2[k]=0}
-        }
-        setCounts(c2)
-      }
-      load()
-    },[])
-    const clearKey=async(k)=>{
-      if(!window.confirm(`Clear all ${labels[k]}?`))return
-      try{await window.storage.delete(`westfield_v1_${k}`);setCounts(p=>({...p,[k]:0}));setStatus(`${labels[k]} cleared`);setTimeout(()=>setStatus(''),2000)}catch(e){}
-    }
-    const clearAll=async()=>{
-      if(!window.confirm('Clear ALL saved data? Cannot be undone.'))return
-      for(const k of keys){try{await window.storage.delete(`westfield_v1_${k}`)}catch(e){}}
-      setCounts({});setStatus('All data cleared');setTimeout(()=>setStatus(''),3000)
-    }
-    const exportCSV=async()=>{
-      try{
-        const rows=['Date,QB,Concept,Result,Yards,Hash,Pressure']
-        for(const k of['gameday_plays','practice_plays','scoreboard_plays']){
-          try{const r=await window.storage.get(`westfield_v1_${k}`);if(r&&r.value){JSON.parse(r.value).forEach(p=>{rows.push(`${p.time||''},${p.qb||''},${p.con||p.concept||''},${p.res||p.result||''},${p.yds||0},${p.hash||''},${p.pres||false}`)})}}catch(e){}
-        }
-        const blob=new Blob([rows.join('\n')],{type:'text/csv'})
-        const url=URL.createObjectURL(blob)
-        const a=document.createElement('a');a.href=url;a.download='westfield_plays.csv';a.click()
-        URL.revokeObjectURL(url);setStatus('CSV downloaded');setTimeout(()=>setStatus(''),2500)
-      }catch(e){setStatus('Export failed')}
-    }
-    const total=Object.values(counts).reduce((a,v)=>a+v,0)
-    return(
-      <div style={{padding:isMobile?12:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
-        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginBottom:16}}>
-          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2,marginBottom:3}}>💾 DATA MANAGER — Persistent Storage</div>
-          <div style={{fontSize:8,color:'#555',lineHeight:1.7}}>Every play logged · every film note · every player grade · every practice rep saves automatically. Data persists through page refresh, closing the browser, and reopening on any device. Nothing ever disappears.</div>
-        </div>
-        {status&&<div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:6,padding:'9px 14px',marginBottom:12,fontSize:12,fontWeight:700,color:'#22c55e'}}>✓ {status}</div>}
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:14}}>
-          {[['Total Items',total,'#22c55e'],['Plays',(counts.gameday_plays||0)+(counts.practice_plays||0)+(counts.scoreboard_plays||0),'#22c55e'],['Film Notes',counts.film_notes||0,'#06b6d4'],['Players',counts.player_profiles||0,'#F0B429']].map(([l,v,col])=>(
-            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'12px 4px',textAlign:'center'}}>
-              <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
-              <div style={{fontSize:7,color:'#555',marginTop:3,letterSpacing:1}}>{l}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:14}}>
-          <div style={{background:'#0a0a0a',padding:'7px 14px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'0.3fr 1fr 1.5fr 0.5fr 0.8fr'}}>{['','TYPE','DESCRIPTION','SAVED',''].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555'}}>{h}</div>)}</div>
-          {keys.map((k,i)=>(
-            <div key={k} style={{display:'grid',gridTemplateColumns:'0.3fr 1fr 1.5fr 0.5fr 0.8fr',padding:'9px 14px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
-              <div style={{fontSize:14}}>{icons[k]}</div>
-              <div style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{labels[k]}</div>
-              <div style={{fontSize:8,color:'#555'}}>{k.replace(/_/g,' ')}</div>
-              <div style={{fontSize:11,fontWeight:700,color:(counts[k]||0)>0?'#22c55e':'#555'}}>{counts[k]||0}{(counts[k]||0)>0?' ✓':''}</div>
-              <button onClick={()=>clearKey(k)} style={{padding:'4px 8px',background:'#1a0404',border:'0.5px solid #dc262644',borderRadius:4,color:'#dc2626',fontSize:8,cursor:'pointer'}}>Clear</button>
-            </div>
-          ))}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?8:10}}>
-          <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:6}}>💾 Auto-Save Active</div>
-            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Every play saves instantly. A green SAVED flash appears in the header every time data is stored. You never have to tap save.</div>
-            <div style={{background:'#14532d',borderRadius:6,padding:'7px',fontSize:9,fontWeight:700,color:'#22c55e',textAlign:'center'}}>✓ ALL DATA SAVING AUTOMATICALLY</div>
-          </div>
-          <div style={{background:'#0a0d1a',border:'1px solid #06b6d433',borderRadius:8,padding:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:6}}>📤 Export All Plays</div>
-            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Download every logged play as a CSV. Open in Excel or share with college programs that ask for raw data. Works on any device.</div>
-            <button onClick={exportCSV} style={{width:'100%',padding:'10px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>Download westfield_plays.csv</button>
-          </div>
-          <div style={{background:'#1a0404',border:'1px solid #dc262633',borderRadius:8,padding:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#dc2626',marginBottom:6}}>🗑 Clear All Data</div>
-            <div style={{fontSize:12,color:'#9ca3af',lineHeight:1.7,marginBottom:8}}>Wipes everything. Use at the start of a new season. Every play, note, and grade removed permanently.</div>
-            <button onClick={clearAll} style={{width:'100%',padding:'10px',background:'#1a0404',border:'1px solid #dc2626',borderRadius:6,color:'#dc2626',fontWeight:700,fontSize:12,cursor:'pointer'}}>Clear All Data</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
 
   const MobileTabMenu=({tab,setTab})=>{
     const [open,setOpen]=React.useState(false)
@@ -3520,6 +3434,93 @@ function Card({ title, titleClr, children, style = {} }) {
       return()=>clearInterval(t)
     },[val])
     return React.createElement('span',null,cur)
+  }
+
+
+  const DataManagerTab=()=>{
+    const [counts,setCounts]=React.useState({})
+    const [status,setStatus]=React.useState('')
+    const KEYS=['gameday_plays','film_notes','player_profiles','quick_favs','practice_checked']
+    const LBLS={gameday_plays:'Game Day Plays',film_notes:'Film Notes',player_profiles:'Player Profiles',quick_favs:'Favorite Plays',practice_checked:'Practice Reps'}
+    const ICONS={gameday_plays:'🏈',film_notes:'🎬',player_profiles:'👤',quick_favs:'⭐',practice_checked:'✓'}
+    React.useEffect(()=>{
+      const go=async()=>{
+        const obj={}
+        for(const k of KEYS){
+          try{const r=await window.storage.get('westfield_v1_'+k);if(r&&r.value){const p=JSON.parse(r.value);obj[k]=Array.isArray(p)?p.length:typeof p==='object'?Object.keys(p||{}).length:1}else obj[k]=0}catch(e){obj[k]=0}
+        }
+        setCounts(obj)
+      }
+      go()
+    },[])
+    const clearKey=async(k)=>{
+      if(!window.confirm('Clear '+LBLS[k]+'?'))return
+      try{await window.storage.delete('westfield_v1_'+k);setCounts(p=>({...p,[k]:0}));setStatus(LBLS[k]+' cleared');setTimeout(()=>setStatus(''),2000)}catch(e){}
+    }
+    const clearAll=async()=>{
+      if(!window.confirm('Clear ALL saved data? Cannot be undone.'))return
+      for(const k of KEYS){try{await window.storage.delete('westfield_v1_'+k)}catch(e){}}
+      setCounts({});setStatus('All data cleared');setTimeout(()=>setStatus(''),3000)
+    }
+    const exportCSV=async()=>{
+      try{
+        const rows=['Time,QB,Concept,Result,Yards,Hash,Pressure']
+        try{
+          const r=await window.storage.get('westfield_v1_gameday_plays')
+          if(r&&r.value)JSON.parse(r.value).forEach(p=>rows.push([p.time||'',p.qb||'',p.con||p.concept||'',p.res||p.result||'',p.yds||0,p.hash||'',p.pres||false].join(',')))
+        }catch(e){}
+        const blob=new Blob([rows.join('\n')],{type:'text/csv'})
+        const url=URL.createObjectURL(blob)
+        const a=document.createElement('a');a.href=url;a.download='westfield_plays.csv';a.click()
+        URL.revokeObjectURL(url);setStatus('CSV downloaded ✓');setTimeout(()=>setStatus(''),3000)
+      }catch(e){setStatus('Export failed')}
+    }
+    const total=Object.values(counts).reduce((a,v)=>a+(v||0),0)
+    return(
+      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2,marginBottom:3}}>💾 DATA MANAGER — Everything Saves Automatically</div>
+          <div style={{fontSize:8,color:'#555',lineHeight:1.7}}>Every logged play · film note · player grade · favorite saves instantly. Persists through refresh and reopening. Nothing ever disappears.</div>
+        </div>
+        {status&&<div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:6,padding:'9px 14px',marginBottom:12,fontSize:12,fontWeight:700,color:'#22c55e'}}>✓ {status}</div>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:14}}>
+          {[['Total',total,'#22c55e'],['Plays',counts.gameday_plays||0,'#22c55e'],['Notes',counts.film_notes||0,'#06b6d4'],['Players',counts.player_profiles||0,'#F0B429']].map(([l,v,col])=>(
+            <div key={l} style={{background:'#111',border:'0.5px solid '+col+'33',borderRadius:8,padding:'12px 4px',textAlign:'center'}}>
+              <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:3,letterSpacing:1}}>{l.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:14}}>
+          <div style={{background:'#0a0a0a',padding:'7px 14px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'0.3fr 1fr 0.5fr 0.8fr'}}>{['','TYPE','SAVED',''].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555'}}>{h}</div>)}</div>
+          {KEYS.map((k,i)=>(
+            <div key={k} style={{display:'grid',gridTemplateColumns:'0.3fr 1fr 0.5fr 0.8fr',padding:'10px 14px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+              <div style={{fontSize:14}}>{ICONS[k]}</div>
+              <div style={{fontSize:10,fontWeight:700,color:'#F0B429'}}>{LBLS[k]}</div>
+              <div style={{fontSize:11,fontWeight:700,color:(counts[k]||0)>0?'#22c55e':'#555'}}>{counts[k]||0}{(counts[k]||0)>0?' ✓':''}</div>
+              <button onClick={()=>clearKey(k)} style={{padding:'4px 8px',background:'#1a0404',border:'0.5px solid #dc262644',borderRadius:4,color:'#dc2626',fontSize:8,cursor:'pointer'}}>Clear</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+          <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:6}}>💾 Auto-Save Active</div>
+            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Every play and note saves under 1 second. Green SAVED flashes each time. Never manually save anything.</div>
+            <div style={{background:'#14532d',borderRadius:6,padding:'7px',fontSize:9,fontWeight:700,color:'#22c55e',textAlign:'center'}}>✓ ALL DATA SAVING</div>
+          </div>
+          <div style={{background:'#0a0d1a',border:'1px solid #06b6d433',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:6}}>📤 Export to CSV</div>
+            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Download all logged plays as a CSV. Open in Excel or share with college programs requesting raw data.</div>
+            <button onClick={exportCSV} style={{width:'100%',padding:'10px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>Download CSV</button>
+          </div>
+          <div style={{background:'#1a0404',border:'1px solid #dc262633',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#dc2626',marginBottom:6}}>🗑 Clear All Data</div>
+            <div style={{fontSize:12,color:'#9ca3af',lineHeight:1.7,marginBottom:8}}>Wipes everything. Use at the start of a new season. Cannot be undone.</div>
+            <button onClick={clearAll} style={{width:'100%',padding:'10px',background:'#1a0404',border:'1px solid #dc2626',borderRadius:6,color:'#dc2626',fontWeight:700,fontSize:12,cursor:'pointer'}}>Clear All Data</button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -4163,6 +4164,7 @@ export default function App() {
           <select value={safeIdx} onChange={e=>setReplayIdx(+e.target.value)} style={{ ...selS, flex:1 }}>
             {rows.map((p2,i)=><option key={i} value={i}>Play #{p2.id} — {p2.concept} | {p2.qb} | {p2.result} | {p2.yards>0?p2.yards+' yds':'0 yds'} | Down {p2.down} | {p2.field} | {p2.date}</option>)}
           </select>
+          {saveFlash&&<div style={{display:'flex',alignItems:'center',gap:4,background:'#14532d',border:'0.5px solid #22c55e',borderRadius:6,padding:'3px 10px',fontSize:9,fontWeight:700,color:'#22c55e',flexShrink:0}}>✓ SAVED</div>}
         </div>
         <div style={{ background:'#0e1b0e', border:`1px solid ${C.border}`, borderRadius:7, padding:'9px 14px', display:'flex', gap:20, alignItems:'center', flexWrap:'wrap' }}>
           <div>
