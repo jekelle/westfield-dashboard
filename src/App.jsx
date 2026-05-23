@@ -954,6 +954,185 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const GameDayTab=()=>{
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Game day mode. I know your full season AND any plays you log below in real time. Quick answers only — what do you need right now?'}])
+    const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
+    const [plays,setPlays]=React.useState([])
+    const [qb,setQb]=React.useState('Cooper Melvin');const [con,setCon]=React.useState('Baltimore')
+    const [res,setRes]=React.useState('Complete');const [yds,setYds]=React.useState('')
+    const [dn,setDn]=React.useState('1st');const [dist,setDist]=React.useState('10')
+    const [hash,setHash]=React.useState('Middle');const [pres,setPres]=React.useState('Clean')
+    const ref=React.useRef(null)
+    const concepts=['Baltimore','Post','Stick','Four Verts','Verticals','Out','Slant','Smash','RPO Glance','Sail','Fade']
+    const qs=['What should we call RIGHT NOW on 3rd and short?','Cooper is struggling — what adjustment do we make?','Best play for the red zone right now?','Which concept is working best today?','Ben needs a confidence play — what do we call?','Down by 7 two minutes left — game plan?','What does Cooper need to do differently?','Score is tied — highest percentage play?']
+    const liveStat=()=>{
+      if(!plays.length)return'No plays logged yet this game.'
+      const cm=plays.filter(p=>p.qb==='Cooper Melvin'),bk=plays.filter(p=>p.qb==='Ben Kooi')
+      const pct=ps=>ps.length?Math.round(ps.filter(p=>p.res==='Complete').length/ps.length*100):0
+      const bc=concepts.map(c2=>{const cp=plays.filter(p=>p.con===c2);return cp.length?`${c2}:${Math.round(cp.filter(p=>p.res==='Complete').length/cp.length*100)}%(${cp.length}att)`:null}).filter(Boolean)
+      return`LIVE(${plays.length}plays): Cooper ${cm.length}att ${pct(cm)}%. Ben ${bk.length}att ${pct(bk)}%. Concepts: ${bc.join(' ')}`
+    }
+    const send=async(msg)=>{
+      if(!msg.trim()||load)return
+      const um={role:'user',content:msg};const nm=[...msgs,um]
+      setMsgs(nm);setInp('');setLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Kaepernick 79% Lamar 72% Mahomes 65%. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
+      }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
+      setLoad(false)
+    }
+    const logPlay=()=>{
+      setPlays(p=>[...p,{id:Date.now(),qb,con,res,yds:Number(yds)||0,dn,dist,hash,pres,time:new Date().toLocaleTimeString()}])
+      setYds('')
+    }
+    React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
+    const cp2=plays.length?Math.round(plays.filter(p=>p.res==='Complete').length/plays.length*100):null
+    const cm=plays.filter(p=>p.qb==='Cooper Melvin'),bk=plays.filter(p=>p.qb==='Ben Kooi')
+    const pOf=ps=>ps.length?Math.round(ps.filter(p=>p.res==='Complete').length/ps.length*100):null
+    const bestPlay=plays.length?plays.reduce((best,p,_,arr)=>{const cp3=arr.filter(x=>x.con===p.con);const pct=Math.round(cp3.filter(x=>x.res==='Complete').length/cp3.length*100);return pct>best.pct?{name:p.con,pct}:best},{name:'—',pct:0}).name:null
+    return(
+      <div style={{padding:14,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:12}}>
+          {[['PLAYS',plays.length||'—','#22c55e'],['OVERALL',cp2!==null?cp2+'%':'—',cp2>=80?'#22c55e':cp2>=65?'#d97706':'#dc2626'],['COOPER',pOf(cm)!==null?pOf(cm)+'%':'—','#22c55e'],['BEN',pOf(bk)!==null?pOf(bk)+'%':'—','#F0B429'],['HOT PLAY',bestPlay||'—','#06b6d4']].map(([l,v,col])=>(
+            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'9px 4px',textAlign:'center'}}>
+              <div style={{fontSize:17,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:2,letterSpacing:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'0.9fr 1.1fr',gap:10}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8,letterSpacing:1}}>📋 LOG PLAY</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:7}}>
+              {['Cooper Melvin','Ben Kooi'].map(q=><button key={q} onClick={()=>setQb(q)} style={{padding:'9px 4px',background:qb===q?'#14532d':'#111',border:`1px solid ${qb===q?'#22c55e':'#252525'}`,borderRadius:6,color:qb===q?'#22c55e':'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{q==='Cooper Melvin'?'COOPER QB1':'BEN QB2'}</button>)}
+            </div>
+            <select value={con} onChange={e=>setCon(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:14,marginBottom:7}}>
+              {concepts.map(c2=><option key={c2} value={c2}>{c2}</option>)}
+            </select>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:7}}>
+              <select value={dn} onChange={e=>setDn(e.target.value)} style={{background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:13}}>{['1st','2nd','3rd','4th'].map(d=><option key={d} value={d}>{d}</option>)}</select>
+              <select value={dist} onChange={e=>setDist(e.target.value)} style={{background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:13}}>{['1','2','3','4','5','6','7','8','9','10','12','15','20+'].map(d=><option key={d} value={d}>{d} yds</option>)}</select>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3,marginBottom:7}}>
+              {['Left','Mid','Right'].map(h=><button key={h} onClick={()=>setHash(h)} style={{padding:'7px',background:hash===h?'#0c1a3a':'#111',border:`1px solid ${hash===h?'#06b6d4':'#252525'}`,borderRadius:4,color:hash===h?'#06b6d4':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{h}</button>)}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3,marginBottom:7}}>
+              {['Clean','Pressure'].map(p=><button key={p} onClick={()=>setPres(p)} style={{padding:'7px',background:pres===p?(p==='Clean'?'#0a1a0a':'#1a0404'):'#111',border:`1px solid ${pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#252525'}`,borderRadius:4,color:pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{p}</button>)}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3,marginBottom:7}}>
+              {[['Complete','✓','#22c55e'],['Incomplete','✗','#d97706'],['INT','INT','#dc2626'],['Scramble','RUN','#9ca3af']].map(([r,lbl,col])=><button key={r} onClick={()=>setRes(r)} style={{padding:'8px 2px',background:res===r?col+'22':'#111',border:`1px solid ${res===r?col:'#252525'}`,borderRadius:4,color:res===r?col:'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{lbl}</button>)}
+            </div>
+            <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="Yards"
+              style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'10px',fontSize:24,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
+            <button onClick={logPlay} style={{width:'100%',padding:'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
+            {[...plays].reverse().slice(0,5).map((p,i)=>{
+              const rc=p.res==='Complete'?'#22c55e':p.res==='Incomplete'?'#d97706':'#dc2626'
+              return<div key={p.id} style={{display:'flex',gap:6,padding:'4px 0',borderBottom:'0.5px solid #1a1a1a',fontSize:9,alignItems:'center'}}>
+                <span style={{color:'#444',minWidth:36}}>{p.time}</span>
+                <span style={{color:p.qb==='Cooper Melvin'?'#22c55e':'#F0B429',fontWeight:700,minWidth:22}}>{p.qb==='Cooper Melvin'?'CM':'BK'}</span>
+                <span style={{color:'#F0B429',flex:1}}>{p.con}</span>
+                <span style={{color:'#555',fontSize:8}}>{p.dn}&{p.dist}</span>
+                <span style={{color:rc,fontWeight:700}}>{p.res==='Complete'?'✓':p.res==='Incomplete'?'✗':p.res==='Interception'?'INT':'RUN'}</span>
+                <span style={{color:'#ccc'}}>{p.yds>0?`${p.yds}y`:''}</span>
+              </div>
+            })}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              {qs.map(q=><button key={q} onClick={()=>send(q)} style={{padding:'5px 8px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:14,color:'#9ca3af',fontSize:8.5,cursor:'pointer'}}>{q}</button>)}
+            </div>
+            <div style={{flex:1,overflowY:'auto',background:'#090909',border:'0.5px solid #1a1a2a',borderRadius:8,padding:10,display:'flex',flexDirection:'column',gap:8,minHeight:320}}>
+              {msgs.map((m,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'88%',padding:'9px 12px',borderRadius:10,background:m.role==='user'?'#14532d':'#111',border:`0.5px solid ${m.role==='user'?'#22c55e33':'#252525'}`,borderBottomRightRadius:m.role==='user'?2:10,borderBottomLeftRadius:m.role==='assistant'?2:10}}>
+                    <div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{m.content}</div>
+                  </div>
+                </div>
+              ))}
+              {load&&<div style={{display:'flex'}}><div style={{padding:'8px 12px',background:'#111',border:'0.5px solid #252525',borderRadius:10}}><span style={{fontSize:11,color:'#06b6d4'}}>Analyzing...</span></div></div>}
+              <div ref={ref}/>
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)}
+                placeholder="Ask anything — play calls, adjustments, patterns..."
+                style={{flex:1,background:'#111',border:'0.5px solid #252525',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/>
+              <button onClick={()=>send(inp)} disabled={load||!inp.trim()}
+                style={{padding:'10px 18px',background:load||!inp.trim()?'#111':'#14532d',border:'none',borderRadius:8,color:load||!inp.trim()?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>
+                {load?'...':'Ask'}
+              </button>
+            </div>
+          </div>
+        </div>
+        {plays.length>0&&<div style={{marginTop:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+          <div style={{background:'#0a0a0a',padding:'5px 12px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'1.5fr 0.5fr 0.7fr 0.5fr 0.7fr'}}>
+            {['CONCEPT','ATT','COMP%','YDS','GRADE'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}
+          </div>
+          {concepts.map(ct=>{const cp3=plays.filter(p=>p.con===ct);if(!cp3.length)return null;const pct=Math.round(cp3.filter(p=>p.res==='Complete').length/cp3.length*100);const ay=(cp3.reduce((a,p)=>a+p.yds,0)/cp3.length).toFixed(1);const gc=pct>=80?'#22c55e':pct>=55?'#d97706':'#dc2626';return<div key={ct} style={{display:'grid',gridTemplateColumns:'1.5fr 0.5fr 0.7fr 0.5fr 0.7fr',padding:'6px 12px',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}><div style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{ct}</div><div style={{fontSize:10,textAlign:'center',color:'#ccc'}}>{cp3.length}</div><div style={{fontSize:11,textAlign:'center',fontWeight:700,color:gc}}>{pct}%</div><div style={{fontSize:10,textAlign:'center',color:'#9ca3af'}}>{ay}</div><div style={{fontSize:9,textAlign:'center',fontWeight:700,color:gc}}>{pct>=80?'ELITE':pct>=55?'OK':'WORK'}</div></div>}).filter(Boolean)}
+        </div>}
+      </div>
+    )
+  }
+  const ScoutReportTab=()=>{
+    const [report,setReport]=React.useState('');const [load,setLoad]=React.useState(false)
+    const [target,setTarget]=React.useState('Cooper Melvin');const [style,setStyle]=React.useState('College Coach')
+    const gen=async()=>{
+      setLoad(true);setReport('')
+      const isCooper=target==='Cooper Melvin'
+      const prompt=isCooper
+        ?`Write a formal college football scouting report for Cooper Melvin QB Westfield Shamrocks Class of 2027. Style: ${style} evaluation. Include: Player Overview, Physical Tools, Statistical Analysis with actual numbers, NFL Comparison (Kaepernick 79% Lamar 72% Mahomes 65% style match), Strengths, Areas to Develop, Division Fit Assessment, Recruiting Recommendation. Data: Cooper 84% 658yds 13.2ypa RTG87 Grade A. deepBall 88% vs NFL 52%. airYards 13.2 vs NFL 8.0. TTT 2.0s optimal. CPOE +4%. Hash 73% target 85%. RedZone 0% needs work. All fixes = RTG 108+ D1-AA/FCS level. ${CTX.replace(/'/g,"\\'")}`
+        :`Write a developmental scouting report for Ben Kooi QB2 Westfield Shamrocks Class of 2027. Style: ${style} evaluation. Include: Player Overview, Current Level, Stats, 8-Step Development Plan, Projected Ceiling, Timeline to QB1. Data: Ben 70% 310yds 6.5ypa RTG71 Grade B. Showcase 80%. TTT 1.9s slightly fast. DeepBall 50%. Hash 60%. RedZone 0%. Fix mechanics+hash+redzone = RTG 96+ QB1 candidate. High upside do not give up. ${CTX.replace(/'/g,"\\'")}`
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,system:'You are a professional college football scout. Write formal evaluation reports. Be specific with numbers. Use professional scouting language that will impress college coaches.',messages:[{role:'user',content:prompt}]})})
+        const d=await r.json();setReport(d.content?.[0]?.text||'Error')
+      }catch(e){setReport('Connection error.')}
+      setLoad(false)
+    }
+    const fmt=t=>t.split('\n').map((line,i)=>{
+      if(line.startsWith('**')&&line.endsWith('**'))return<div key={i} style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:1,marginTop:14,marginBottom:4,paddingTop:10,borderTop:'0.5px solid #252525'}}>{line.replace(/\*\*/g,'').toUpperCase()}</div>
+      if(line.startsWith('# '))return<div key={i} style={{fontSize:15,fontWeight:700,color:'#22c55e',marginBottom:6}}>{line.replace('# ','')}</div>
+      if(line.startsWith('## '))return<div key={i} style={{fontSize:12,fontWeight:700,color:'#F0B429',marginTop:10,marginBottom:3}}>{line.replace('## ','')}</div>
+      if(!line.trim())return<div key={i} style={{height:5}}/>
+      return<div key={i} style={{fontSize:12,color:line.startsWith('-')||line.match(/^\d+\./)?'#ccc':'#9ca3af',lineHeight:1.7,paddingLeft:line.startsWith('-')||line.match(/^\d+\./)?12:0}}>{line}</div>
+    })
+    return(
+      <div style={{padding:20}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2,marginBottom:2}}>📄 AI SCOUT REPORT GENERATOR</div>
+          <div style={{fontSize:8,color:'#555'}}>Formal scouting report formatted like what real college programs send to coaches and recruiting directors</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+          <div><div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>PLAYER</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {[['Cooper Melvin','QB1 · A · ELITE','#22c55e','#0a1a0a'],['Ben Kooi','QB2 · B · DEV','#F0B429','#1a1000']].map(([p,sub,col,bg])=>(
+                <button key={p} onClick={()=>setTarget(p)} style={{padding:'12px 6px',background:target===p?bg:'#0d0d0d',border:`1px solid ${target===p?col:'#252525'}`,borderRadius:8,cursor:'pointer',textAlign:'center'}}>
+                  <div style={{fontSize:10,fontWeight:700,color:target===p?col:'#444'}}>{p}</div>
+                  <div style={{fontSize:8,color:'#333',marginTop:2}}>{sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div><div style={{fontSize:8,color:'#555',marginBottom:6,letterSpacing:1}}>REPORT STYLE</div>
+            <select value={style} onChange={e=>setStyle(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:8,color:'#ccc',padding:'9px',fontSize:13,marginBottom:8}}>
+              {['College Coach','D1 Recruiting Coordinator','D2 Scout','D3 Program Director','NAIA Evaluator','NFL Draft Style'].map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+            <button onClick={gen} disabled={load} style={{width:'100%',padding:'12px',background:load?'#111':'#14532d',border:`1px solid ${load?'#252525':'#22c55e'}`,borderRadius:8,color:load?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:load?'default':'pointer'}}>
+              {load?'Writing scout report...':'📄 GENERATE SCOUT REPORT'}
+            </button>
+          </div>
+        </div>
+        {report?<div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,paddingBottom:8,borderBottom:'0.5px solid #252525'}}>
+            <div><div style={{fontSize:13,fontWeight:700,color:'#22c55e'}}>{target.toUpperCase()} — SCOUTING EVALUATION</div><div style={{fontSize:8,color:'#555',marginTop:2}}>WESTFIELD SHAMROCKS · CLASS OF 2027 · Based on 117 tracked plays</div></div>
+            <div style={{background:'#14532d',border:'1px solid #22c55e',borderRadius:6,padding:'3px 9px',fontSize:8,fontWeight:700,color:'#22c55e'}}>CONFIDENTIAL</div>
+          </div>
+          {fmt(report)}
+        </div>:<div style={{background:'#0d0d0d',border:'0.5px solid #1a1a1a',borderRadius:8,padding:28,textAlign:'center',color:'#333',fontSize:12}}>Select player and style above then generate</div>}
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
