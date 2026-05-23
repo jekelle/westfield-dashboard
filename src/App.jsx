@@ -1407,6 +1407,310 @@ function Card({ title, titleClr, children, style = {} }) {
     )
   }
 
+
+  const SpecialTeamsTab=()=>{
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Special Teams AI ready. Tell me the situation — field position, score, time, down — and I will give you the exact special teams call. Punt, kick, fake, onside, 2-point — I know the chart.'}])
+    const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
+    const [sit,setSit]=React.useState('Punt');const [field,setField]=React.useState('Own 35')
+    const [score,setScore]=React.useState('Tied');const [time,setTime]=React.useState('2nd Half')
+    const ref=React.useRef(null)
+    const ST='You are the special teams coordinator for Westfield Shamrocks high school football. SHORT answers max 4 sentences. Name the exact call. Rules: Fake punt works inside opp 40 on 4th and 4 or less. Onside kick when down 8+ under 4 min. Squib kick protects against speed returners. Pooch punt pins inside 10. Hands team always ready. Never kick to their best returner in open field. 2-point chart: go for 2 when down 5 or 12 or 15. Block punt overload right side. Directional kick away from their best returner always. Rugby punt buys time when pressured.'
+    const situations=[
+      {l:'4th and long — punt',q:'4th and long must punt. Where do we aim and what coverage assignment?'},
+      {l:'4th and short — fake?',q:'4th and 4 or less. Should we fake the punt? What is the play?'},
+      {l:'Kickoff — protect lead',q:'We are winning. Best kickoff strategy to protect our lead?'},
+      {l:'Onside kick — need ball',q:'We are down and need the ball back fast. Onside or squib?'},
+      {l:'Field goal decision',q:'We are in field goal range. Kick it or go for it?'},
+      {l:'Block their punt',q:'We need to block their punt. What formation and who do we send?'},
+      {l:'Return the kickoff',q:'How do we set up our kickoff return for maximum yards?'},
+      {l:'2-point conversion?',q:'Should we go for 2 right now and what play do we run?'},
+      {l:'Onside kick — down 8',q:'Down 8 with 3 minutes left. Do we onside kick and exactly how?'},
+      {l:'Pin them inside 10',q:'We want to pin them inside their 10 yard line. Pooch punt setup?'},
+      {l:'Ice the kicker',q:'They are about to kick a field goal. Do we ice the kicker?'},
+      {l:'Fake field goal',q:'We are in field goal range. Should we fake it and what is the play?'},
+    ]
+    const chart=[
+      {sit:'4th & 1-3 own 40+',rec:'GO FOR IT',why:'High %. Stick or Out call.',col:'#22c55e'},
+      {sit:'4th & 4+ own 30',rec:'PUNT',why:'Pin them deep. Directional kick.',col:'#d97706'},
+      {sit:'4th & 1-4 opp 40',rec:'GO FOR IT',why:'Cooper 84% short. Stick call.',col:'#22c55e'},
+      {sit:'4th & 5+ opp 35',rec:'FIELD GOAL',why:'Inside range. Take the 3.',col:'#d97706'},
+      {sit:'Down 8 under 4min',rec:'ONSIDE KICK',why:'Need possession. Hands team.',col:'#dc2626'},
+      {sit:'Up 7+ 4th quarter',rec:'SQUIB KICK',why:'Neutralize returner. Eat clock.',col:'#22c55e'},
+      {sit:'Down 5 after TD',rec:'GO FOR 2',why:'Two-point chart says go.',col:'#dc2626'},
+      {sit:'4th & short fake',rec:'FAKE PUNT',why:'Catch them. Direct snap.',col:'#22c55e'},
+    ]
+    const send=async(msg)=>{
+      if(!msg.trim()||load)return
+      const ctx=`Situation: ${sit}. Field: ${field}. Score: ${score}. Time: ${time}. `
+      const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
+      setMsgs(nm);setInp('');setLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:ST,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
+      }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
+      setLoad(false)
+    }
+    React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#07070f',border:'1px solid #7c3aed',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#a78bfa',letterSpacing:2}}>🏉 SPECIAL TEAMS COORDINATOR — AI CALL ASSISTANT</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Set the situation · Tap any scenario · Get the exact special teams call instantly</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #3a1a6e',borderRadius:8,padding:10}}>
+          {[['SITUATION',['Punt','Kickoff','Field Goal','Return','4th Down','2-Point'],sit,setSit],['FIELD POSITION',['Own 1-15','Own 16-30','Own 31-45','Opp 45-35','Opp 34-20','Opp 19-1'],field,setField],['SCORE',['Tied','Up 1-7','Up 8-14','Down 1-7','Down 8-14','Down 15+'],score,setScore],['TIME',['1st Quarter','2nd Quarter','Halftime','3rd Quarter','Under 4 Min','Final Drive'],time,setTime]].map(([lbl,opts,val,set])=>(
+            <div key={lbl}><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>{lbl}</div>
+              <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                {opts.map(o=><button key={o} onClick={()=>set(o)} style={{padding:'6px 8px',background:val===o?'#1a0a2e':'#111',border:`1px solid ${val===o?'#7c3aed':'#252525'}`,borderRadius:4,color:val===o?'#a78bfa':'#555',fontSize:8,fontWeight:700,cursor:'pointer',textAlign:'left'}}>{o}</button>)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:12,marginBottom:12}}>
+          <div>
+            <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TAP A SCENARIO — INSTANT CALL</div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              {situations.map(s=><button key={s.l} onClick={()=>send(s.q)} style={{padding:'8px 12px',background:'#0d0d0d',border:'0.5px solid #3a1a6e',borderRadius:6,color:'#9ca3af',fontSize:10,cursor:'pointer',textAlign:'left'}}><span style={{color:'#a78bfa',fontWeight:700,marginRight:6}}>▶</span>{s.l}</button>)}
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{flex:1,overflowY:'auto',background:'#090909',border:'0.5px solid #3a1a6e',borderRadius:8,padding:10,display:'flex',flexDirection:'column',gap:8,minHeight:340}}>
+              {msgs.map((m,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'88%',padding:'9px 12px',borderRadius:10,background:m.role==='user'?'#1a0a2e':'#111',border:`0.5px solid ${m.role==='user'?'#7c3aed33':'#252525'}`,borderBottomRightRadius:m.role==='user'?2:10,borderBottomLeftRadius:m.role==='assistant'?2:10}}>
+                    {m.role==='assistant'&&<div style={{fontSize:8,fontWeight:700,color:'#a78bfa',marginBottom:3,letterSpacing:1}}>ST AI</div>}
+                    <div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{m.content}</div>
+                  </div>
+                </div>
+              ))}
+              {load&&<div style={{display:'flex'}}><div style={{padding:'8px 12px',background:'#111',border:'0.5px solid #252525',borderRadius:10}}><span style={{fontSize:11,color:'#a78bfa'}}>Calling play...</span></div></div>}
+              <div ref={ref}/>
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)} placeholder="Any special teams question..." style={{flex:1,background:'#111',border:'0.5px solid #3a1a6e',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/>
+              <button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:'10px 18px',background:load||!inp.trim()?'#111':'#1a0a2e',border:`1px solid ${load||!inp.trim()?'#252525':'#7c3aed'}`,borderRadius:8,color:load||!inp.trim()?'#555':'#a78bfa',fontWeight:700,fontSize:13,cursor:'pointer'}}>{load?'...':'Call It'}</button>
+            </div>
+          </div>
+        </div>
+        <div style={{background:'#0d0d0d',border:'0.5px solid #3a1a6e',borderRadius:8,overflow:'hidden'}}>
+          <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #3a1a6e',display:'grid',gridTemplateColumns:'1.5fr 0.8fr 1.5fr'}}>{['SITUATION','CALL','WHY'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}</div>
+          {chart.map((d,i)=>(
+            <div key={d.sit} style={{display:'grid',gridTemplateColumns:'1.5fr 0.8fr 1.5fr',padding:'8px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center',cursor:'pointer'}} onClick={()=>send(`More detail on when to ${d.rec.toLowerCase()} in this situation: ${d.sit}`)}>
+              <div style={{fontSize:9,fontWeight:700,color:'#a78bfa'}}>{d.sit}</div>
+              <div style={{fontSize:10,fontWeight:700,color:d.col,textAlign:'center'}}>{d.rec}</div>
+              <div style={{fontSize:8,color:'#666'}}>{d.why}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const FilmNotesTab=()=>{
+    const [notes,setNotes]=React.useState([]);const [player,setPlayer]=React.useState('Cooper Melvin')
+    const [tag,setTag]=React.useState('Strength');const [note,setNote]=React.useState('')
+    const [sess,setSess]=React.useState('5/12');const [filter,setFilter]=React.useState('All')
+    const [aiSum,setAiSum]=React.useState('');const [aiLoad,setAiLoad]=React.useState(false)
+    const players=['Cooper Melvin','Ben Kooi','OL','WR Corps','Team']
+    const tags=['Strength','Weakness','Technique Fix','Highlight','Red Flag','Coachable Moment']
+    const sessions=['4/21','4/27','4/30','Showcase','5/8','5/12']
+    const tc=t=>t==='Strength'?'#22c55e':t==='Weakness'||t==='Red Flag'?'#dc2626':t==='Highlight'?'#F0B429':t==='Technique Fix'?'#06b6d4':'#a78bfa'
+    const addNote=()=>{if(!note.trim())return;setNotes(p=>[...p,{id:Date.now(),player,tag,note,sess,time:new Date().toLocaleTimeString()}]);setNote('')}
+    const filtered=filter==='All'?notes:notes.filter(n=>n.tag===filter||n.player===filter||n.sess===filter)
+    const summarize=async()=>{
+      if(!notes.length)return;setAiLoad(true);setAiSum('')
+      const nt=notes.map(n=>`${n.sess} ${n.player} [${n.tag}]: ${n.note}`).join('\n')
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:350,system:'You are an elite football analyst. Summarize film notes into top 3 coaching priorities. Be specific and direct. Group by player.',messages:[{role:'user',content:`Summarize these film notes and give top 3 priorities:\n${nt}`}]})})
+        const d=await r.json();setAiSum(d.content?.[0]?.text||'Error')
+      }catch(e){setAiSum('Connection error.')}
+      setAiLoad(false)
+    }
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🎬 FILM NOTES — Log and Tag Every Observation</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Tag observations during film review · AI summarizes into top coaching priorities · Filter by player tag or session</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:12}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:10,letterSpacing:1}}>ADD FILM NOTE</div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>PLAYER</div>
+              <select value={player} onChange={e=>setPlayer(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:12}}>{players.map(p=><option key={p} value={p}>{p}</option>)}</select>
+            </div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>SESSION</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
+                {sessions.map(s=><button key={s} onClick={()=>setSess(s)} style={{padding:'6px 2px',background:sess===s?'#0c1a3a':'#111',border:`1px solid ${sess===s?'#06b6d4':'#252525'}`,borderRadius:4,color:sess===s?'#06b6d4':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{s}</button>)}
+              </div>
+            </div>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>TAG</div>
+              <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                {tags.map(t=><button key={t} onClick={()=>setTag(t)} style={{padding:'6px 10px',background:tag===t?tc(t)+'22':'#111',border:`1px solid ${tag===t?tc(t):'#252525'}`,borderRadius:4,color:tag===t?tc(t):'#555',fontSize:9,fontWeight:700,cursor:'pointer',textAlign:'left'}}>{t}</button>)}
+              </div>
+            </div>
+            <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="What did you see? Release point, footwork, route, read, coverage..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'10px',fontSize:12,outline:'none',minHeight:80,resize:'none',marginBottom:8,boxSizing:'border-box'}}/>
+            <button onClick={addNote} style={{width:'100%',padding:'11px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:8,color:'#06b6d4',fontWeight:700,fontSize:13,cursor:'pointer'}}>+ ADD NOTE</button>
+          </div>
+          <div>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:8}}>
+              {['All',...tags].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:'4px 8px',background:filter===f?'#0c1a3a':'#0d0d0d',border:`0.5px solid ${filter===f?'#06b6d4':'#252525'}`,borderRadius:14,color:filter===f?'#06b6d4':'#555',fontSize:8,cursor:'pointer'}}>{f}</button>)}
+            </div>
+            {notes.length>0&&<button onClick={summarize} disabled={aiLoad} style={{width:'100%',padding:'10px',background:aiLoad?'#111':'#07070f',border:`1px solid ${aiLoad?'#252525':'#06b6d4'}`,borderRadius:8,color:aiLoad?'#555':'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer',marginBottom:8}}>{aiLoad?'Analyzing...':'🤖 AI SUMMARIZE — Top 3 Coaching Priorities'}</button>}
+            {aiSum&&<div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:8}}><div style={{fontSize:8,fontWeight:700,color:'#06b6d4',marginBottom:5,letterSpacing:1}}>AI FILM ANALYSIS</div><div style={{fontSize:12,color:'#ccc',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{aiSum}</div></div>}
+            {filtered.length===0?<div style={{background:'#0d0d0d',border:'0.5px solid #1a1a1a',borderRadius:8,padding:24,textAlign:'center',color:'#333',fontSize:12}}>No notes yet — start adding observations</div>:
+            filtered.map(n=>(
+              <div key={n.id} style={{background:'#0d0d0d',border:`0.5px solid ${tc(n.tag)}33`,borderRadius:8,padding:12,marginBottom:6,borderLeft:`3px solid ${tc(n.tag)}`}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                  <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                    <span style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{n.player}</span>
+                    <span style={{background:tc(n.tag)+'22',color:tc(n.tag),fontSize:8,fontWeight:700,padding:'1px 6px',borderRadius:4}}>{n.tag}</span>
+                    <span style={{fontSize:8,color:'#555'}}>{n.sess}</span>
+                  </div>
+                  <span style={{fontSize:7,color:'#333'}}>{n.time}</span>
+                </div>
+                <div style={{fontSize:12,color:'#ccc',lineHeight:1.5}}>{n.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const DepthChartTab=()=>{
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Personnel AI ready. Ask about who to start, when to sub Ben in, what packages to run for each QB, and how to develop both QBs at the same time.'}])
+    const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
+    const ref=React.useRef(null)
+    const DC2='You are the personnel advisor for Westfield Shamrocks. Cooper QB1: 84% 13.2ypa RTG87 elite arm mobile CPOE+4% starts every game. Ben QB2: 70% 6.5ypa RTG71 good short game developing. Both hit 80% at Showcase so both perform under pressure. Ben best on Stick/Out short routes. Cooper best on Baltimore/Post/Verticals deep. Red zone 0% both no package yet. Never put Ben in for deep 3rd downs his deep ball 50%. Use Ben in short yardage packages. Give SHORT answers max 4 sentences.'
+    const qs=['Who do we start at QB?','When should Ben come in?','How do we use both QBs in the same game?','How many snaps should Ben get?','Can Ben run the red zone package?','How do we develop Ben without hurting Cooper?']
+    const pkgs=[
+      {pkg:'Opening Series',who:'Cooper Melvin',why:'Starter. Set the tone with Baltimore and Post.',col:'#22c55e'},
+      {pkg:'Short Yardage',who:'Cooper or Ben',why:'Both work here. Stick 100% either QB.',col:'#d97706'},
+      {pkg:'Deep Shot 3rd',who:'Cooper ONLY',why:'Deep ball 88%. Ben 50% deep — never sub.',col:'#22c55e'},
+      {pkg:'Ben Package',who:'Ben Kooi',why:'Stick Out Slant only. Build confidence.',col:'#F0B429'},
+      {pkg:'Red Zone',who:'INSTALL NOW',why:'0% both QBs. No package exists yet.',col:'#dc2626'},
+      {pkg:'2-Minute Drill',who:'Cooper Melvin',why:'TTT 2.0s optimal for no-huddle.',col:'#22c55e'},
+      {pkg:'4th & Short',who:'Cooper Melvin',why:'84% comp and mobility best conversion.',col:'#22c55e'},
+      {pkg:'Showcase Games',who:'Cooper Melvin',why:'Feature every snap. College-ready now.',col:'#22c55e'},
+    ]
+    const send=async(msg)=>{
+      if(!msg.trim()||load)return
+      const um={role:'user',content:msg};const nm=[...msgs,um]
+      setMsgs(nm);setInp('');setLoad(true)
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:DC2,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
+      }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
+      setLoad(false)
+    }
+    React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📋 DEPTH CHART & PERSONNEL — AI PACKAGE ADVISOR</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Who starts · When to sub · Package recommendations · How to use both QBs</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+          {[['COOPER MELVIN','QB1 STARTER','#22c55e','#070f07',[['Comp %','84%','#22c55e'],['RTG','87','#22c55e'],['YPA','13.2','#F0B429'],['Deep Ball','88%','#22c55e'],['TTT','2.0s','#22c55e'],['CPOE','+4%','#22c55e']],'START EVERY GAME'],['BEN KOOI','QB2 BACKUP','#F0B429','#0c0a06',[['Comp %','70%','#d97706'],['RTG','71','#d97706'],['YPA','6.5','#d97706'],['Deep Ball','50%','#dc2626'],['TTT','1.9s','#d97706'],['CPOE','-3%','#dc2626']],'SHORT PACKAGE ONLY']].map(([n,role,col,bg,stats,badge])=>(
+            <div key={n} style={{background:bg,border:`2px solid ${col}`,borderRadius:10,padding:14}}>
+              <div style={{fontSize:10,fontWeight:700,color:col,marginBottom:8,textAlign:'center'}}>{n} — {role}</div>
+              {stats.map(([l,v,vc])=><div key={l} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:`0.5px solid ${col}22`}}><span style={{fontSize:9,color:'#9ca3af'}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:vc}}>{v}</span></div>)}
+              <div style={{marginTop:8,background:col+'22',borderRadius:6,padding:'7px',textAlign:'center',fontSize:10,fontWeight:700,color:col}}>{badge}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,overflow:'hidden',marginBottom:10}}>
+          <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #252525',display:'grid',gridTemplateColumns:'1fr 1.2fr 1.5fr'}}>{['PACKAGE','QB','WHY'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555'}}>{h}</div>)}</div>
+          {pkgs.map((p,i)=><div key={p.pkg} style={{display:'grid',gridTemplateColumns:'1fr 1.2fr 1.5fr',padding:'7px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center',cursor:'pointer'}} onClick={()=>send(`Tell me more about the ${p.pkg} package`)}><div style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{p.pkg}</div><div style={{fontSize:9,fontWeight:700,color:p.col}}>{p.who}</div><div style={{fontSize:8,color:'#666'}}>{p.why}</div></div>)}
+        </div>
+        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>{qs.map(q=><button key={q} onClick={()=>send(q)} style={{padding:'5px 10px',background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:14,color:'#9ca3af',fontSize:9,cursor:'pointer'}}>{q}</button>)}</div>
+        <div style={{overflowY:'auto',background:'#090909',border:'0.5px solid #2a1a00',borderRadius:8,padding:10,display:'flex',flexDirection:'column',gap:8,minHeight:180,marginBottom:8}}>
+          {msgs.map((m,i)=><div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}><div style={{maxWidth:'88%',padding:'9px 12px',borderRadius:10,background:m.role==='user'?'#2a1a00':'#111',border:`0.5px solid ${m.role==='user'?'#F0B42933':'#252525'}`,borderBottomRightRadius:m.role==='user'?2:10,borderBottomLeftRadius:m.role==='assistant'?2:10}}>{m.role==='assistant'&&<div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:3}}>PERSONNEL AI</div>}<div style={{fontSize:13,color:'#e5e7eb',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{m.content}</div></div></div>)}
+          {load&&<div style={{display:'flex'}}><div style={{padding:'8px 12px',background:'#111',borderRadius:10,border:'0.5px solid #252525'}}><span style={{fontSize:11,color:'#F0B429'}}>Thinking...</span></div></div>}
+          <div ref={ref}/>
+        </div>
+        <div style={{display:'flex',gap:6}}><input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)} placeholder="Ask about personnel, packages, substitutions..." style={{flex:1,background:'#111',border:'0.5px solid #2a1a00',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/><button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:'10px 18px',background:load||!inp.trim()?'#111':'#2a1a00',border:`1px solid ${load||!inp.trim()?'#252525':'#F0B429'}`,borderRadius:8,color:load||!inp.trim()?'#555':'#F0B429',fontWeight:700,fontSize:13,cursor:'pointer'}}>{load?'...':'Ask'}</button></div>
+      </div>
+    )
+  }
+
+  const DashboardTab=()=>{
+    const sData=[
+      {d:'4/21',type:'7on7',cAtt:10,cComp:8,cYds:82,bAtt:10,bComp:7,bYds:62,note:'Cooper sharp. Ben redzone issues.'},
+      {d:'4/27',type:'7on7',cAtt:10,cComp:8,cYds:96,bAtt:6,bComp:4,bYds:38,note:'Consistent. Ben improving.'},
+      {d:'4/30',type:'Varsity',cAtt:3,cComp:3,cYds:89,bAtt:2,bComp:1,bYds:12,note:'Cooper 69-yd TD Verticals.'},
+      {d:'Show.',type:'Showcase',cAtt:10,cComp:8,cYds:110,bAtt:10,bComp:8,bYds:75,note:'Both 80%. College coaches watching.'},
+      {d:'5/8',type:'7on7',cAtt:5,cComp:5,cYds:74,bAtt:5,bComp:2,bYds:28,note:'Cooper perfect. Ben throws high.'},
+      {d:'5/12',type:'Team',cAtt:16,cComp:12,cYds:207,bAtt:11,bComp:6,bYds:95,note:'Cooper INT noted. Ben improving.'},
+    ]
+    const cd=[
+      {n:'Baltimore',col:'#22c55e',pct:100,att:12,epa:1.8,grade:'ELITE'},
+      {n:'Post',col:'#22c55e',pct:100,att:10,epa:1.4,grade:'ELITE'},
+      {n:'Stick',col:'#22c55e',pct:100,att:22,epa:0.8,grade:'ELITE'},
+      {n:'Four Verts',col:'#22c55e',pct:100,att:2,epa:1.9,grade:'ELITE'},
+      {n:'Verticals',col:'#22c55e',pct:88,att:4,epa:2.1,grade:'ELITE'},
+      {n:'Out',col:'#d97706',pct:100,att:10,epa:0.2,grade:'SOLID'},
+      {n:'Slant',col:'#d97706',pct:90,att:8,epa:0.3,grade:'SOLID'},
+      {n:'Smash',col:'#d97706',pct:100,att:2,epa:0.5,grade:'BUILD'},
+      {n:'RPO Glance',col:'#d97706',pct:100,att:4,epa:0.4,grade:'BUILD'},
+      {n:'Sail',col:'#dc2626',pct:0,att:10,epa:-0.6,grade:'CUT'},
+      {n:'Fade',col:'#dc2626',pct:0,att:10,epa:-0.8,grade:'CUT'},
+    ]
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📊 SEASON DASHBOARD — 2026-2027 Full Overview</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>117 plays · 6 sessions · Both QBs · All concepts · Everything at a glance</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:6,marginBottom:12}}>
+          {[['117','Total Plays','#22c55e'],['84%','Cooper Comp','#22c55e'],['70%','Ben Comp','#F0B429'],['87','Cooper RTG','#22c55e'],['71','Ben RTG','#F0B429'],['A','Season Grade','#22c55e']].map(([v,l,col])=>(
+            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'10px 4px',textAlign:'center'}}>
+              <div style={{fontSize:20,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:3,letterSpacing:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+            <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',fontSize:9,fontWeight:700,color:'#22c55e',letterSpacing:1}}>SESSION LOG</div>
+            {sData.map((s,i)=>(
+              <div key={s.d} style={{padding:'8px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a'}}>
+                <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:2}}>
+                  <span style={{fontSize:10,fontWeight:700,color:'#F0B429',minWidth:32}}>{s.d}</span>
+                  <span style={{fontSize:8,color:'#444',minWidth:50}}>{s.type}</span>
+                  <span style={{fontSize:10,fontWeight:700,color:'#22c55e',minWidth:38}}>C:{Math.round(s.cComp/s.cAtt*100)}%</span>
+                  <span style={{fontSize:10,fontWeight:700,color:'#F0B429',minWidth:38}}>B:{Math.round(s.bComp/s.bAtt*100)}%</span>
+                  <span style={{fontSize:8,color:'#333',flex:1}}>{s.cYds+s.bYds}yds</span>
+                </div>
+                <div style={{fontSize:8,color:'#444'}}>{s.note}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
+            <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'1fr 0.6fr 0.5fr 0.6fr 0.7fr'}}>{['CONCEPT','COMP%','ATT','EPA','GRADE'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}</div>
+            {cd.map((x,i)=>(
+              <div key={x.n} style={{display:'grid',gridTemplateColumns:'1fr 0.6fr 0.5fr 0.6fr 0.7fr',padding:'6px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+                <div style={{fontSize:9,fontWeight:700,color:x.col}}>{x.n}</div>
+                <div style={{fontSize:11,fontWeight:700,color:x.col,textAlign:'center'}}>{x.pct}%</div>
+                <div style={{fontSize:10,textAlign:'center',color:'#9ca3af'}}>{x.att}</div>
+                <div style={{fontSize:10,fontWeight:700,textAlign:'center',color:x.epa>=0?'#22c55e':'#dc2626'}}>{x.epa>=0?'+':''}{x.epa}</div>
+                <div style={{fontSize:9,textAlign:'center',fontWeight:700,color:x.col}}>{x.grade}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+          {[['CALL EVERY GAME','#22c55e',['Baltimore — 100%, 12.4avg, +1.8 EPA','Post — 100%, 13.1avg, +1.4 EPA','Stick — 100%, 7.7avg, +0.8 EPA','Four Verts — 100%, 22.0avg, +1.9 EPA','Verticals — 88%, 28.5avg, +2.1 EPA']],['BUILD IMMEDIATELY','#d97706',['Out — 100%, keep in every game','Slant — 90%, good opener','Smash — 100%, expand reps','RPO Glance — 100%, develop','Red Zone Package — MUST INSTALL']],['REMOVE NOW','#dc2626',['Sail — 0% all 6 sessions, -0.6 EPA','Fade — 0% all 6 sessions, -0.8 EPA','Right deep routes — 0% both QBs','Ben deep routes — only 50%','Any play with 0% comp rate']]].map(([t,col,items])=>(
+            <div key={t} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:8,padding:12}}>
+              <div style={{fontSize:9,fontWeight:700,color:col,marginBottom:8,letterSpacing:1}}>{t}</div>
+              {items.map((item,i)=><div key={i} style={{fontSize:9,color:col+'cc',padding:'4px 0',borderBottom:`0.5px solid ${col}22`,lineHeight:1.5}}>{item}</div>)}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10, ...style }}>
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
