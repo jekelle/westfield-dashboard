@@ -873,6 +873,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const [dn,setDn]=React.useState('1st');const [dist,setDist]=React.useState('10')
     const [hash,setHash]=React.useState('Middle');const [pres,setPres]=React.useState('Clean')
     const [sep,setSep]=React.useState('Open')
+    const [clipUrl,setClipUrl]=React.useState('')
     const ref=React.useRef(null)
     const concepts=['Baltimore','Post','Stick','Four Verts','Verticals','Out','Slant','Smash','RPO Glance','Sail','Fade']
     const qs=['What should we call RIGHT NOW on 3rd and short?','Cooper is struggling — what adjustment do we make?','Best play for the red zone right now?','Which concept is working best today?','Ben needs a confidence play — what do we call?','Down by 7 two minutes left — game plan?','What does Cooper need to do differently?','Score is tied — highest percentage play?']
@@ -888,7 +889,7 @@ function Card({ title, titleClr, children, style = {} }) {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Kaepernick 79% Lamar 72% Mahomes 65%. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Strong arm + mobile QB profile. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -942,7 +943,11 @@ function Card({ title, titleClr, children, style = {} }) {
                 {['Open','Contested','Covered'].map(s2=>{const col=s2==='Open'?'#22c55e':s2==='Contested'?'#d97706':'#dc2626';return<button key={s2} onClick={()=>setSep(s2)} style={{padding:'7px 2px',background:sep===s2?col+'22':'#111',border:`1px solid ${sep===s2?col:'#252525'}`,borderRadius:4,color:sep===s2?col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{s2}</button>})}
               </div>
             </div>
-            <button onClick={logPlay} style={{width:'100%',padding:isMobile?'18px':'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:isMobile?22:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
+            <button onClick={logPlay} style={{width:'100%',
+            <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>VIDEO CLIP (Hudl/YouTube — optional)</div>
+              <input value={clipUrl} onChange={e=>setClipUrl(e.target.value)} placeholder="Paste clip URL..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <button style={{width:'100%',padding:isMobile?'18px':'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:isMobile?22:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
             {[...plays].reverse().slice(0,5).map((p,i)=>{
               const rc=p.res==='Complete'?'#22c55e':p.res==='Incomplete'?'#d97706':'#dc2626'
               return<div key={p.id} style={{display:'flex',gap:6,padding:'4px 0',borderBottom:'0.5px solid #1a1a1a',fontSize:9,alignItems:'center'}}>
@@ -1629,7 +1634,7 @@ function Card({ title, titleClr, children, style = {} }) {
        pros:['Dominant arm — 13.2 avg yds per play','Elite deep ball 88% vs NFL avg 52%','85%+ comp rate between the hashes','100% on 5/8 — best form of season','Performs under pressure with coaches watching','CPOE +4% — outperforms his projected rate'],
        cons:['Red zone 0% — no package installed yet','Sail and Fade mechanics need drilling','Release hangtime — keep at 3.3s or less','Right hash deep routes — 0% all season'],
        next:['Red zone route tree — Fade and back-shoulder reps','Hash accuracy drill — L and R 10 reps each','Flat release drill — fix hangtime issue','Film study — Kaepernick red zone mechanics'],
-       proj:'Hash 73→85% = RTG 87→96. Fix redzone = RTG 102. All fixes = 108+ (D1-AA/FCS territory).'},
+       proj:'Hash 73→85% = RTG 87→96. Fix redzone = RTG 102. All fixes = 108+ (strong recruiting profile).'},
       {id:'ben',name:'Ben Kooi',number:'',pos:'QB',grade:'B',col:'#F0B429',
        stats:{Comp:'70%',Yards:'310',YPA:'6.5',RTG:'71',ATT:'54',Sessions:'6'},
        sessions:[{d:'4/21',g:'B',n:'70% comp. Good short game. Redzone miss.'},{d:'4/27',g:'C+',n:'67% comp. Inconsistent. Still improving.'},{d:'4/30',g:'C',n:'50% comp. High throws when comfortable.'},{d:'Show.',g:'B+',n:'80% comp. Most improved. Responded under pressure.'},{d:'5/8',g:'D',n:'40% comp. High release mechanic issue.'},{d:'5/12',g:'C+',n:'55% comp. Better decisions. Trending up.'}],
@@ -1787,7 +1792,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const [load,setLoad]=React.useState(false)
     const [physical,setPhysical]=React.useState({height:'',weight:'',dash:'',gpa:'',gradYear:'2027'})
     const profiles={
-      'Cooper Melvin':{grade:'A',rtg:'87',comp:'84%',yds:'658',ypa:'13.2',deep:'88%',hash:'73%',ttt:'2.0s',cpoe:'+4%',col:'#22c55e',proj:'RTG 108+ D1-AA/FCS with all fixes',style:'Kaepernick 79% Lamar 72% Mahomes 65%'},
+      'Cooper Melvin':{grade:'A',rtg:'87',comp:'84%',yds:'658',ypa:'13.2',deep:'88%',hash:'73%',ttt:'2.0s',cpoe:'+4%',col:'#22c55e',proj:'RTG 108+ D1-AA/FCS with all fixes',style:'Strong arm + mobile QB profile'},
       'Ben Kooi':{grade:'B',rtg:'71',comp:'70%',yds:'310',ypa:'6.5',deep:'50%',hash:'60%',ttt:'1.9s',cpoe:'-3%',col:'#F0B429',proj:'RTG 96+ QB1 capable in 6 months',style:'Developing dual-threat with high upside'},
     }
     const p=profiles[target]
@@ -1796,7 +1801,7 @@ function Card({ title, titleClr, children, style = {} }) {
       const physLine=Object.values(physical).some(v=>v)?`Physical: ${physical.height||'TBD'} height, ${physical.weight||'TBD'} lbs, ${physical.dash||'TBD'} 40 time, GPA ${physical.gpa||'TBD'}, Class of ${physical.gradYear}.`:'Physical profile not yet measured.'
       const isCooper=target==='Cooper Melvin'
       const prompt=isCooper
-        ?`Write a formal college football scouting report for Cooper Melvin, QB at Westfield Shamrocks Indiana, Class of 2027. Written from the perspective of a ${style}. Use exact stats throughout. Include these sections with headers:\n\nPLAYER OVERVIEW\nPHYSICAL PROFILE\nSTATISTICAL ANALYSIS\nNFL COMPARISON PROFILE\nSTRENGTHS\nAREAS TO DEVELOP\nDIVISION FIT ASSESSMENT\nRECRUITMENT RECOMMENDATION\n\nData: ${physLine} Season stats: 63att 50comp 84% 658yds 13.2ypa RTG87 Grade A. NFL NextGen: TTT 2.0s (NFL avg 2.36s optimal). airYards 13.2 (NFL avg 8.0 — ABOVE). Deep ball 88% (NFL avg 52% — ELITE). Hash accuracy 73% (NFL 71% avg). CPOE +4% outperforms projected rate. Style match: Kaepernick 79%, Lamar Jackson 72%, Mahomes 65%. Red zone 0% — no package installed yet. Fix hash+redzone+consistency = RTG 108+ D1-AA/FCS prospect. Make this sound like a real college program scouting document.`
+        ?`Write a formal college football scouting report for Cooper Melvin, QB at Westfield Shamrocks Indiana, Class of 2027. Written from the perspective of a ${style}. Use exact stats throughout. Include these sections with headers:\n\nPLAYER OVERVIEW\nPHYSICAL PROFILE\nSTATISTICAL ANALYSIS\nNFL COMPARISON PROFILE\nSTRENGTHS\nAREAS TO DEVELOP\nDIVISION FIT ASSESSMENT\nRECRUITMENT RECOMMENDATION\n\nData: ${physLine} Season stats: 63att 50comp 84% 658yds 13.2ypa RTG87 Grade A. NFL NextGen: TTT 2.0s (NFL avg 2.36s optimal). airYards 13.2 (NFL avg 8.0 — ABOVE). Deep ball 88% (NFL avg 52% — ELITE). Hash accuracy 73% (NFL 71% avg). CPOE +4% outperforms projected rate. Style match: Strong arm accuracy · Mobile QB profile. Red zone 0% — no package installed yet. Fix hash+redzone+consistency = elite high school level with continued development. Make this sound like a real college program scouting document.`
         :`Write a developmental scouting evaluation for Ben Kooi, QB2 at Westfield Shamrocks Indiana, Class of 2027. Written from the perspective of a ${style}. Include: PLAYER OVERVIEW, CURRENT PROFILE, STATISTICAL ANALYSIS, KEY DEVELOPMENT AREAS, 8-STEP IMPROVEMENT PLAN, PROJECTED CEILING, TIMELINE TO STARTER. Data: ${physLine} 54att 38comp 70% 310yds 6.5ypa RTG71 Grade B. TTT 1.9s (slightly fast). Deep ball 50%. Hash 60%. CPOE -3%. Showcase game 80% comp under pressure with coaches watching — best performance. Fix mechanics+hash+redzone = RTG 96+ QB1 candidate. High upside. Do not give up on him. Make this sound like a real college program evaluation.`
       try{
         const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,system:'You are a professional college football scout writing formal evaluation reports. Use professional scouting language. Reference specific stats and numbers. Make it something a real college coach would read and act on.',messages:[{role:'user',content:prompt}]})})
@@ -1834,7 +1839,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
             <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:6,letterSpacing:1}}>REPORT STYLE</div>
             <select value={style} onChange={e=>setStyle(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:8,color:'#ccc',padding:'10px',fontSize:13,marginBottom:12}}>
-              {['D1 Recruiting Coordinator','D1-AA / FCS Scout','D2 Recruiting Coordinator','D2 Scout','D3 Program Director','NAIA Evaluator','NFL Draft Style Evaluation','Junior College Scout'].map(s=><option key={s} value={s}>{s}</option>)}
+              {['College Recruiting Coordinator','Small College Scout','D2 Recruiting Coordinator','D2 Scout','D3 Program Director','NAIA Evaluator','Advanced Scouting Report','Junior College Scout'].map(s=><option key={s} value={s}>{s}</option>)}
             </select>
             <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:8,letterSpacing:1}}>PHYSICAL PROFILE (optional but recommended)</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
@@ -1896,6 +1901,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const [aiSum,setAiSum]=React.useState('')
     const [aiLoad,setAiLoad]=React.useState(false)
     const [setupOpen,setSetupOpen]=React.useState(false)
+    const [videoUrl,setVideoUrl]=React.useState('')
 
     const players=['Cooper Melvin','Ben Kooi','WR1','WR2','RB1','OL','Team']
     const tags=['Strength','Weakness','Technique Fix','Highlight','Red Flag','Release Mechanics','Footwork','Route Running','Decision Making','Coachable Moment']
@@ -1911,7 +1917,7 @@ function Card({ title, titleClr, children, style = {} }) {
       {label:'Hash throw off',tag:'Weakness',txt:'Hash throw mechanics breaking down — not setting feet toward target on left/right hash. Needs rep work.'},
     ]
 
-    const addNote=()=>{if(!note.trim())return;setNotes(p=>[...p,{id:Date.now(),player,tag,note,sess,time:new Date().toLocaleTimeString()}]);setNote('')}
+    const addNote=()=>{if(!note.trim())return;setNotes(p=>[...p,{id:Date.now(),player,tag,note,sess,time:new Date().toLocaleTimeString(),videoUrl}]);setNote('');setVideoUrl('')}
     const addQuick=(q)=>{setTag(q.tag);setNote(q.txt)}
     const filtered=filter==='All'?notes:notes.filter(n=>n.tag===filter||n.player===filter||n.sess===filter)
 
@@ -1984,6 +1990,9 @@ function Card({ title, titleClr, children, style = {} }) {
               </div>
             </div>
             <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="What did you see? Be specific — release point, footwork, coverage read, route precision, separation distance..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'10px',fontSize:12,outline:'none',minHeight:80,resize:'none',marginBottom:8,boxSizing:'border-box',lineHeight:1.6}}/>
+            <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>VIDEO LINK (Hudl or YouTube — optional)</div>
+              <input value={videoUrl} onChange={e=>setVideoUrl(e.target.value)} placeholder="Paste Hudl or YouTube URL..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:12,outline:'none',boxSizing:'border-box'}}/>
+            </div>
             <button onClick={addNote} disabled={!note.trim()} style={{width:'100%',padding:'11px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:8,color:'#06b6d4',fontWeight:700,fontSize:13,cursor:'pointer'}}>+ ADD FILM NOTE</button>
             <div style={{marginTop:10,background:'#111',borderRadius:6,padding:8}}>
               <div style={{fontSize:8,fontWeight:700,color:'#555',marginBottom:4}}>SESSION TOTALS</div>
@@ -2025,6 +2034,7 @@ function Card({ title, titleClr, children, style = {} }) {
                     <span style={{fontSize:7,color:'#333',flexShrink:0}}>{n.time}</span>
                   </div>
                   <div style={{fontSize:12,color:'#ccc',lineHeight:1.5}}>{n.note}</div>
+                  {n.videoUrl&&<div style={{marginTop:4}}><a href={n.videoUrl} target='_blank' rel='noopener noreferrer' style={{fontSize:10,color:'#06b6d4',display:'flex',alignItems:'center',gap:4,textDecoration:'none'}}>▶ Open clip in Hudl / YouTube</a></div>}
                 </div>
               ))}
             </div>}
@@ -2095,7 +2105,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:fs?28:16,fontWeight:700,color:'#fff',marginBottom:6}}>Cooper Melvin — QB1 Starter</div>
-              <div style={{fontSize:fs?15:10,color:'#22c55e',fontWeight:700,marginBottom:14,letterSpacing:1}}>KAEPERNICK ARM · LAMAR MOBILITY · MAHOMES IQ</div>
+              <div style={{fontSize:fs?15:10,color:'#22c55e',fontWeight:700,marginBottom:14,letterSpacing:1}}>STRONG ARM · MOBILITY · HIGH IQ</div>
               <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:14}}>
                 {[['84%','Comp Rate','#22c55e'],['658','Total Yards','#fff'],['13.2','Yds/Play','#F0B429'],['87','Passer RTG','#22c55e']].map(([v,l,col])=>(
                   <div key={l} style={{background:'#111',borderRadius:8,padding:'10px 4px',textAlign:'center'}}>
@@ -2113,7 +2123,7 @@ function Card({ title, titleClr, children, style = {} }) {
                 </div>
                 <div style={{background:'#1a0a0a',borderRadius:8,padding:10}}>
                   <div style={{fontSize:fs?13:9,fontWeight:700,color:'#dc2626',marginBottom:6}}>FIX THESE = SCHOLARSHIP</div>
-                  {[['Hash 73%→85%','RTG 87→96 · D3/NAIA level'],['Redzone 0%→50%','RTG 87→102 · D2 level'],['All fixes combined','RTG 108+ · D1-AA/FCS']].map(([fix,result])=>(
+                  {[['Hash 73%→85%','RTG 87→96 · D3/NAIA level'],['Redzone 0%→50%','RTG 87→102 · D2 level'],['Hash + redzone + consistency =','elite HS level with continued growth']].map(([fix,result])=>(
                     <div key={fix} style={{padding:'4px 0',borderBottom:'0.5px solid #2a0404'}}><div style={{fontSize:fs?12:9,fontWeight:700,color:'#F0B429'}}>{fix}</div><div style={{fontSize:fs?11:8,color:'#666'}}>{result}</div></div>
                   ))}
                 </div>
@@ -2197,7 +2207,7 @@ function Card({ title, titleClr, children, style = {} }) {
       return(
         <div style={{padding:fs?'32px 48px':'16px 20px'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:fs?14:8}}>
-            {[['DO THIS WEEK','#22c55e',['Install red zone package for both QBs — 0% all season critical','Start filming every practice on tripod — film notes tab','Log every play in Game Day tab — build pressure rate data','Hand Coach Matt the PDF report — mattmolly@me.com','Generate scout report for Cooper — print for next showcase']],['DO THIS MONTH','#d97706',['Hash accuracy drills every practice — Cooper 73%→85% target','Ben release mechanics daily — flat arm path 20 reps','Add all teammates to Player Profiles — track everyone','Use Film Notes to tag 20+ observations — unlock AI coaching report','Send scout reports to D2/D3 recruiting coordinators']],['SEASON GOAL','#F0B429',['Cooper RTG 87→96 on hash fix — D2/D3 scholarship level','Cooper RTG 87→102 on redzone fix — D1-AA/FCS territory','Ben RTG 71→96+ — full QB1 capable in 6 months','Pressure rate under 20% — OL earns elite grade','Run this presentation for coaches before every showcase']]].map(([t,col,items])=>(
+            {[['DO THIS WEEK','#22c55e',['Install red zone package for both QBs — 0% all season critical','Start filming every practice on tripod — film notes tab','Log every play in Game Day tab — build pressure rate data','Hand Coach Matt the PDF report — mattmolly@me.com','Generate scout report for Cooper — print for next showcase']],['DO THIS MONTH','#d97706',['Hash accuracy drills every practice — Cooper 73%→85% target','Ben release mechanics daily — flat arm path 20 reps','Add all teammates to Player Profiles — track everyone','Use Film Notes to tag 20+ observations — unlock AI coaching report','Send scout reports to D2/D3 recruiting coordinators']],['SEASON GOAL','#F0B429',['Cooper RTG 87→96 on hash fix — D2/D3 scholarship level','Cooper RTG 87→102 on redzone fix — strong recruiting profile','Ben RTG 71→96+ — full QB1 capable in 6 months','Pressure rate under 20% — OL earns elite grade','Run this presentation for coaches before every showcase']]].map(([t,col,items])=>(
               <div key={t} style={{background:col+'08',border:`0.5px solid ${col}33`,borderRadius:8,padding:fs?'14px':'10px'}}>
                 <div style={{fontSize:fs?14:9,fontWeight:700,color:col,marginBottom:fs?10:6,letterSpacing:1}}>{t}</div>
                 {items.map((item,i)=><div key={i} style={{fontSize:fs?13:9,color:col+'cc',padding:'4px 0',borderBottom:`0.5px solid ${col}22`,lineHeight:1.5}}>{item}</div>)}
@@ -3817,6 +3827,216 @@ function Card({ title, titleClr, children, style = {} }) {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
+  const CatapultTab=()=>{
+    const [mode,setMode]=React.useState('manual')
+    const [sessions,setSessions]=React.useState([
+      {date:'5/12',players:[
+        {name:'Cooper Melvin',pos:'QB',load:68,dist:2.8,topSpeed:15.2,sprints:8,rpe:7},
+        {name:'Ben Kooi',pos:'QB',load:55,dist:2.2,topSpeed:14.1,sprints:5,rpe:6},
+        {name:'WR1',pos:'WR',load:82,dist:3.6,topSpeed:17.8,sprints:14,rpe:8},
+        {name:'WR2',pos:'WR',load:75,dist:3.2,topSpeed:16.9,sprints:11,rpe:7},
+        {name:'RB1',pos:'RB',load:91,dist:3.9,topSpeed:16.4,sprints:16,rpe:9},
+        {name:'OL Captain',pos:'OL',load:110,dist:1.8,topSpeed:11.2,sprints:4,rpe:8},
+      ]},
+      {date:'5/8',players:[
+        {name:'Cooper Melvin',pos:'QB',load:52,dist:2.1,topSpeed:14.8,sprints:6,rpe:5},
+        {name:'Ben Kooi',pos:'QB',load:48,dist:1.9,topSpeed:13.6,sprints:4,rpe:5},
+        {name:'WR1',pos:'WR',load:71,dist:3.1,topSpeed:17.2,sprints:12,rpe:7},
+        {name:'WR2',pos:'WR',load:68,dist:2.8,topSpeed:16.1,sprints:9,rpe:6},
+        {name:'RB1',pos:'RB',load:85,dist:3.5,topSpeed:15.9,sprints:14,rpe:8},
+        {name:'OL Captain',pos:'OL',load:98,dist:1.6,topSpeed:10.8,sprints:3,rpe:7},
+      ]},
+    ])
+    const [newEntry,setNewEntry]=React.useState({name:'',pos:'QB',load:'',dist:'',topSpeed:'',sprints:'',rpe:''})
+    const [activeSession,setActiveSession]=React.useState(0)
+    const [csvText,setCsvText]=React.useState('')
+    const [csvParsed,setCsvParsed]=React.useState(false)
+    const [aiInsight,setAiInsight]=React.useState('')
+    const [aiLoad,setAiLoad]=React.useState(false)
+    const [newDate,setNewDate]=React.useState('')
+
+    const parseCSV=()=>{
+      try{
+        const lines=csvText.trim().split('\n')
+        const players=[]
+        for(let i=1;i<lines.length;i++){
+          const cols=lines[i].split(',')
+          if(cols.length<4)continue
+          players.push({
+            name:cols[0]?.trim()||'Player '+i,
+            pos:cols[1]?.trim()||'—',
+            load:parseFloat(cols[2])||0,
+            dist:parseFloat(cols[3])||0,
+            topSpeed:parseFloat(cols[4])||0,
+            sprints:parseInt(cols[5])||0,
+            rpe:parseInt(cols[6])||0,
+          })
+        }
+        if(players.length>0){
+          const date=newDate||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'})
+          setSessions(s=>[{date,players},...s])
+          setCsvParsed(true)
+          setActiveSession(0)
+        }
+      }catch(e){alert('CSV parse error — check format')}
+    }
+
+    const addManual=()=>{
+      if(!newEntry.name||!newEntry.load)return
+      setSessions(s=>{
+        const updated=[...s]
+        if(!updated[activeSession])updated.unshift({date:newDate||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}),players:[]})
+        updated[activeSession]={...updated[activeSession],players:[...updated[activeSession].players,{...newEntry,load:parseFloat(newEntry.load)||0,dist:parseFloat(newEntry.dist)||0,topSpeed:parseFloat(newEntry.topSpeed)||0,sprints:parseInt(newEntry.sprints)||0,rpe:parseInt(newEntry.rpe)||0}]}
+        return updated
+      })
+      setNewEntry({name:'',pos:'QB',load:'',dist:'',topSpeed:'',sprints:'',rpe:''})
+    }
+
+    const getAiInsight=async()=>{
+      if(!sessions[activeSession])return
+      setAiLoad(true)
+      const sess=sessions[activeSession]
+      const summary=sess.players.map(p=>`${p.name}(${p.pos}): load=${p.load} dist=${p.dist}mi speed=${p.topSpeed}mph sprints=${p.sprints} rpe=${p.rpe}/10`).join('; ')
+      const compData="Cooper 5/12=75% 5/8=100%. Ben 5/12=55% 5/8=40%."
+      try{
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:'You are a sports science analyst for Westfield Shamrocks football. Analyze athlete load data and correlate with QB performance. Give 3 specific insights: who is at risk of fatigue, who had optimal load, and one recommendation for the next practice. Be direct and specific.',messages:[{role:'user',content:`Load data for ${sess.date}: ${summary}. QB performance context: ${compData}. Analyze load vs performance and give coaching recommendations.`}]})})
+        const d=await r.json()
+        setAiInsight(d.content?.[0]?.text||'Error')
+      }catch(e){setAiInsight('Connection error.')}
+      setAiLoad(false)
+    }
+
+    const sess=sessions[activeSession]
+    const loadColor=l=>l>100?'#dc2626':l>80?'#d97706':l>60?'#22c55e':'#06b6d4'
+    const rpeColor=r=>r>=9?'#dc2626':r>=7?'#d97706':r>=5?'#22c55e':'#06b6d4'
+
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>⚡ CATAPULT & ATHLETE LOAD — Physical Data Meets On-Field Performance</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>Import Catapult CSV or enter manually · Player load scores · Speed · Distance · Correlate with session comp% · AI identifies fatigue risk</div>
+        </div>
+        <div style={{display:'flex',gap:5,marginBottom:12}}>
+          {[['manual','Manual Entry'],['csv','CSV Import'],['rpe','RPE Only (Free)']].map(([k,l])=>(
+            <button key={k} onClick={()=>setMode(k)} style={{padding:'8px 14px',background:mode===k?'#0c1a3a':'#0d0d0d',border:`1px solid ${mode===k?'#06b6d4':'#252525'}`,borderRadius:6,color:mode===k?'#06b6d4':'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.6fr',gap:12}}>
+          <div>
+            {mode==='csv'&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>CATAPULT CSV IMPORT</div>
+                <div style={{fontSize:8,color:'#555',marginBottom:6,lineHeight:1.6}}>Paste your Catapult export CSV below. Expected columns: Name, Position, Load, Distance(mi), TopSpeed(mph), Sprints, RPE</div>
+                <div style={{fontSize:7,color:'#333',marginBottom:4,fontFamily:'monospace'}}>Name,Pos,Load,Dist,Speed,Sprints,RPE<br/>Cooper Melvin,QB,68,2.8,15.2,8,7</div>
+                <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SESSION DATE</div><input value={newDate} onChange={e=>setNewDate(e.target.value)} placeholder="e.g. 5/19" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'6px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                <textarea value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder="Paste CSV data here..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:11,outline:'none',minHeight:100,resize:'none',marginBottom:6,boxSizing:'border-box',fontFamily:'monospace'}}/>
+                <button onClick={parseCSV} disabled={!csvText.trim()} style={{width:'100%',padding:'9px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>Parse CSV Data</button>
+                {csvParsed&&<div style={{marginTop:6,fontSize:10,color:'#22c55e',fontWeight:700,textAlign:'center'}}>✓ CSV imported successfully</div>}
+              </div>
+            )}
+            {mode==='manual'&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:8,letterSpacing:1}}>ADD PLAYER DATA</div>
+                <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SESSION DATE</div><input value={newDate} onChange={e=>setNewDate(e.target.value)} placeholder="5/19" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'6px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 0.6fr',gap:5,marginBottom:5}}>
+                  <div><div style={{fontSize:7,color:'#555',marginBottom:2}}>PLAYER NAME</div><input value={newEntry.name} onChange={e=>setNewEntry(p=>({...p,name:e.target.value}))} placeholder="Name" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11,outline:'none',boxSizing:'border-box'}}/></div>
+                  <div><div style={{fontSize:7,color:'#555',marginBottom:2}}>POS</div><select value={newEntry.pos} onChange={e=>setNewEntry(p=>({...p,pos:e.target.value}))} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11}}>{'QB WR RB TE OL DL LB DB K P'.split(' ').map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:5}}>
+                  {[['load','Load Score'],['dist','Distance (mi)'],['topSpeed','Top Speed (mph)'],['sprints','Sprint Count']].map(([k,l])=>(
+                    <div key={k}><div style={{fontSize:7,color:'#555',marginBottom:2}}>{l.toUpperCase()}</div><input type="number" value={newEntry[k]} onChange={e=>setNewEntry(p=>({...p,[k]:e.target.value}))} placeholder="0" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                  ))}
+                </div>
+                <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:2}}>RPE (1-10 effort rating)</div><input type="number" min="1" max="10" value={newEntry.rpe} onChange={e=>setNewEntry(p=>({...p,rpe:e.target.value}))} placeholder="7" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                <button onClick={addManual} style={{width:'100%',padding:'9px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>+ Add Player Data</button>
+              </div>
+            )}
+            {mode==='rpe'&&(
+              <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>RPE LOGGER — Free Alternative to Catapult</div>
+                <div style={{fontSize:8,color:'#555',marginBottom:8,lineHeight:1.6}}>After every practice, each player rates their effort 1-10. No hardware needed. The app tracks trends and flags fatigue over time. Takes 30 seconds per session.</div>
+                <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SESSION DATE</div><input value={newDate} onChange={e=>setNewDate(e.target.value)} placeholder="5/19" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'6px',fontSize:12,outline:'none',boxSizing:'border-box'}}/></div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 0.6fr',gap:5,marginBottom:8}}>
+                  <div><div style={{fontSize:7,color:'#555',marginBottom:2}}>PLAYER</div><input value={newEntry.name} onChange={e=>setNewEntry(p=>({...p,name:e.target.value}))} placeholder="Player name" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11,outline:'none',boxSizing:'border-box'}}/></div>
+                  <div><div style={{fontSize:7,color:'#555',marginBottom:2}}>RPE 1-10</div><input type="number" min="1" max="10" value={newEntry.rpe} onChange={e=>setNewEntry(p=>({...p,rpe:e.target.value}))} placeholder="7" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'7px',fontSize:18,fontWeight:700,outline:'none',boxSizing:'border-box',textAlign:'center'}}/></div>
+                </div>
+                <button onClick={()=>{if(!newEntry.name||!newEntry.rpe)return;setNewEntry(p=>({...p,name:'',rpe:''}));addManual()}} style={{width:'100%',padding:'9px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>Log RPE</button>
+              </div>
+            )}
+            <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
+              {sessions.map((s,i)=>(
+                <button key={i} onClick={()=>setActiveSession(i)} style={{padding:'5px 10px',background:activeSession===i?'#0c1a3a':'#0d0d0d',border:`0.5px solid ${activeSession===i?'#06b6d4':'#252525'}`,borderRadius:5,color:activeSession===i?'#06b6d4':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{s.date}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            {sess&&(
+              <div>
+                <div style={{background:'#0d0d0d',border:'0.5px solid #1a1a2a',borderRadius:8,overflow:'hidden',marginBottom:8}}>
+                  <div style={{background:'#0a0a0a',padding:'7px 12px',borderBottom:'0.5px solid #252525',display:'grid',gridTemplateColumns:'1fr 0.6fr 0.6fr 0.7fr 0.7fr 0.5fr 0.5fr'}}>
+                    {['PLAYER','LOAD','DIST','SPEED','SPRINTS','RPE','STATUS'].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555',textAlign:'center'}}>{h}</div>)}
+                  </div>
+                  {sess.players.map((p,i)=>{
+                    const status=p.load>100?'HIGH':p.load>80?'MED':p.rpe>=8?'TIRED':'GOOD'
+                    const sc=p.load>100?'#dc2626':p.load>80?'#d97706':'#22c55e'
+                    return(
+                      <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 0.6fr 0.6fr 0.7fr 0.7fr 0.5fr 0.5fr',padding:'8px 12px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+                        <div><div style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{p.name}</div><div style={{fontSize:7,color:'#444'}}>{p.pos}</div></div>
+                        <div style={{textAlign:'center'}}><div style={{fontSize:12,fontWeight:700,color:loadColor(p.load)}}>{p.load}</div></div>
+                        <div style={{textAlign:'center',fontSize:10,color:'#9ca3af'}}>{p.dist}mi</div>
+                        <div style={{textAlign:'center',fontSize:10,color:'#9ca3af'}}>{p.topSpeed}mph</div>
+                        <div style={{textAlign:'center',fontSize:10,color:'#9ca3af'}}>{p.sprints}</div>
+                        <div style={{textAlign:'center'}}><span style={{fontSize:10,fontWeight:700,color:rpeColor(p.rpe)}}>{p.rpe}/10</span></div>
+                        <div style={{textAlign:'center'}}><span style={{fontSize:7,fontWeight:700,color:sc,background:sc+'22',padding:'2px 5px',borderRadius:3}}>{status}</span></div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:8}}>
+                  {[['Avg Load',Math.round(sess.players.reduce((a,p)=>a+p.load,0)/sess.players.length),'#06b6d4'],['High Load',sess.players.filter(p=>p.load>80).length+' players','#dc2626'],['Avg RPE',(sess.players.reduce((a,p)=>a+p.rpe,0)/sess.players.length).toFixed(1)+'/10','#F0B429'],['At Risk',sess.players.filter(p=>p.load>100||p.rpe>=9).length+' players',sess.players.filter(p=>p.load>100||p.rpe>=9).length>0?'#dc2626':'#22c55e']].map(([l,v,col])=>(
+                    <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:7,padding:'8px 4px',textAlign:'center'}}>
+                      <div style={{fontSize:14,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+                      <div style={{fontSize:7,color:'#555',marginTop:3}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10,marginBottom:8}}>
+                  <div style={{fontSize:8,fontWeight:700,color:'#22c55e',marginBottom:5,letterSpacing:1}}>LOAD vs PERFORMANCE CORRELATION</div>
+                  {[{name:'Cooper Melvin',loads:[68,52],comps:[75,100]},{name:'Ben Kooi',loads:[55,48],comps:[55,40]}].map(qb=>(
+                    <div key={qb.name} style={{marginBottom:8,paddingBottom:8,borderBottom:'0.5px solid #1a1a1a'}}>
+                      <div style={{fontSize:10,fontWeight:700,color:'#F0B429',marginBottom:4}}>{qb.name}</div>
+                      <div style={{display:'flex',gap:8}}>
+                        {qb.loads.map((load,i)=>(
+                          <div key={i} style={{background:'#111',borderRadius:5,padding:'5px 8px',textAlign:'center',flex:1}}>
+                            <div style={{fontSize:8,color:'#555',marginBottom:2}}>Load {load}</div>
+                            <div style={{fontSize:11,fontWeight:700,color:qb.comps[i]>=80?'#22c55e':'#d97706'}}>{qb.comps[i]}% comp</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{fontSize:8,color:'#555',marginTop:4}}>
+                        {qb.loads[0]>qb.loads[1]&&qb.comps[0]<qb.comps[1]?'⚠ Higher load correlates with lower performance — monitor closely':'✓ Performance holds across load levels'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={getAiInsight} disabled={aiLoad} style={{width:'100%',padding:'11px',background:aiLoad?'#111':'#0c1a3a',border:`1px solid ${aiLoad?'#252525':'#06b6d4'}`,borderRadius:8,color:aiLoad?'#555':'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer',marginBottom:aiInsight?8:0}}>
+                  {aiLoad?'Analyzing load data...':'🤖 AI Load Analysis — Who needs rest, who is ready to push'}
+                </button>
+                {aiInsight&&(
+                  <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12}}>
+                    <div style={{fontSize:8,fontWeight:700,color:'#06b6d4',marginBottom:6,letterSpacing:1}}>AI LOAD ANALYSIS</div>
+                    <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{aiInsight}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
