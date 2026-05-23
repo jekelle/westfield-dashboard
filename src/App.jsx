@@ -434,7 +434,7 @@ function Card({ title, titleClr, children, style = {} }) {
     ]
 
     return (
-      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?12:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2,marginBottom:3}}>📡 NFL NEXTGEN TRACKING — YOLOv8 + HOMOGRAPHY + ML</div>
           <div style={{fontSize:8,color:'#555',lineHeight:1.6}}>OpenCV · YOLOv8 (Ultralytics) · Homography (pixel→yards) · scikit-learn Logistic Regression · Speed = dist/time · Separation = Euclidean(WR, nearest_CB)</div>
@@ -444,7 +444,7 @@ function Card({ title, titleClr, children, style = {} }) {
             ))}
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:12}}>
           {[['animator','▶ Play Animator','2D field recreation'],['compProb','📊 Comp Prob Model','Logistic regression'],['tracking','⚡ Speed & Sep','CV tracking metrics'],['voronoi','🗺 Field Control','Voronoi territory']].map(([k,l,d])=>(
             <button key={k} onClick={()=>setActiveView(k)} style={{padding:'10px 6px',border:`1px solid ${activeView===k?'#22c55e':'#1a1a1a'}`,borderRadius:6,background:activeView===k?'#0a1a0a':'#0d0d0d',cursor:'pointer'}}>
               <div style={{fontSize:9,fontWeight:700,color:activeView===k?'#22c55e':'#555'}}>{l}</div>
@@ -469,7 +469,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <input type="range" min={0} max={play.frames.length-1} value={frame} onChange={e=>setFrame(Number(e.target.value))} style={{flex:1,accentColor:'#22c55e'}}/>
             <span style={{fontSize:9,color:'#555',minWidth:60}}>Frame {frame+1}/{play.frames.length}</span>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginTop:8}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginTop:8}}>
             {[['Comp Prob',`${Math.round(fr.compProb*100)}%`,fr.compProb>0.7?'#22c55e':fr.compProb>0.4?'#d97706':'#dc2626'],['Separation',`${fr.sep?.toFixed(1)} yds`,fr.sep>2.5?'#22c55e':fr.sep>1.5?'#d97706':'#dc2626'],['WR Speed',`${fr.speed?.toFixed(1)} mph`,'#06b6d4'],['Result',play.result,play.result==='Complete'?'#22c55e':'#dc2626']].map(([l,v,c])=>(
               <div key={l} style={{background:'#111',border:'0.5px solid #1a1a1a',borderRadius:6,padding:10,textAlign:'center'}}>
                 <div style={{fontSize:14,fontWeight:700,color:c}}>{v}</div>
@@ -504,7 +504,7 @@ function Card({ title, titleClr, children, style = {} }) {
               )
             })}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10}}>
             <div style={{background:'#0a0a0a',border:'0.5px solid #252525',borderRadius:8,padding:12}}>
               <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8}}>MODEL FEATURES</div>
               {[['air_yards','Distance LOS→target','Most impactful'],['separation','WR to nearest DB','3+yds=OPEN'],['TTT','Snap to release','Cooper 2.0s optimal'],['hash_pos','L/Mid/R zone','Mid dominant'],['passer_speed','QB mph at release','Cooper mobile+']].map(([f,d,n])=>(
@@ -550,7 +550,7 @@ function Card({ title, titleClr, children, style = {} }) {
               )
             })}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?6:8}}>
             {[['19.2 mph','Peak WR Speed','Cooper Verticals 4/30','vs NFL slot avg 14.8','#22c55e'],['4.8 yds','Best Catch Sep','Cooper Verticals','NFL avg at catch 2.8','#22c55e'],['+11.2 yds','Best xYAC','Cooper Verticals','Predicted yards after catch','#F0B429']].map(([v,l,p,n,c])=>(
               <div key={l} style={{background:'#111',border:'0.5px solid #1a1a1a',borderRadius:6,padding:12,textAlign:'center'}}>
                 <div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div>
@@ -586,7 +586,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <line x1={250} y1={0} x2={250} y2={280} stroke="#F0B42966" strokeWidth={1.5} strokeDasharray="6,3"/>
             <text x={252} y={270} fill="#F0B42988" fontSize={7}>LOS</text>
           </svg>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10}}>
             <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:12}}>
               <div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:8}}>OFFENSE TERRITORY CONTROL</div>
               {[['Mid field','72%','Dominates between hashes'],['Left hash zone','68%','Strong WR release left'],['Deep middle','61%','Air yards force safeties back'],['Short behind LOS','100%','OL controls pre-snap']].map(([z,p,n])=>(
@@ -652,7 +652,7 @@ function Card({ title, titleClr, children, style = {} }) {
         </div>
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)} placeholder="Ask anything about the season, plays, or game planning..." style={{flex:1,background:'#111',border:'1px solid #252525',borderRadius:8,padding:'10px 14px',color:'#fff',fontSize:13,outline:'none'}}/>
-          <button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:'10px 20px',background:load||!inp.trim()?'#111':'#14532d',border:'none',borderRadius:8,color:load||!inp.trim()?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>{load?'...':'Send'}</button>
+          <button onClick={()=>send(inp)} disabled={load||!inp.trim()} style={{padding:isMobile?'12px 20px':'10px 20px',background:load||!inp.trim()?'#111':'#14532d',border:'none',borderRadius:8,color:load||!inp.trim()?'#555':'#22c55e',fontWeight:700,fontSize:isMobile?16:13,cursor:'pointer'}}>{load?'...':'Send'}</button>
         </div>
       </div>
     )
@@ -706,7 +706,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{marginBottom:10}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>YARDS</div>
               <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="0" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'8px',fontSize:18,fontWeight:700,outline:'none'}}/>
             </div>
-            <button onClick={log} style={{width:'100%',padding:'12px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:14,cursor:'pointer'}}>+ LOG PLAY</button>
+            <button onClick={log} style={{width:'100%',padding:isMobile?'16px':'12px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:isMobile?18:14,cursor:'pointer'}}>+ LOG PLAY</button>
           </div>
           <div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:10}}>
@@ -770,7 +770,7 @@ function Card({ title, titleClr, children, style = {} }) {
           <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>⚡ AI GAME PLAN GENERATOR — Built from your 117-play season</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Concept grades · EPA scores · Zone analysis · Cooper and Ben profiles · All baked in</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:14}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?8:10,marginBottom:14}}>
           {[['Opponent (optional)',opp,setOpp,'text','Team name...'],['Game Type',gt,setGt,'select',['7on7','Varsity Game','College Showcase','Scrimmage','Practice Script']],['Focus',foc,setFoc,'select',['Balanced','Showcase Cooper','Develop Ben','Feature Deep Ball','Short Game','Red Zone Work']]].map(([lbl,val,set,type,opts])=>(
             <div key={lbl}><div style={{fontSize:8,color:'#555',marginBottom:4}}>{lbl.toUpperCase()}</div>
               {type==='text'?<input value={val} onChange={e=>set(e.target.value)} placeholder={opts} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'8px',fontSize:12,outline:'none'}}/>
@@ -852,7 +852,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           )}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginTop:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginTop:10}}>
           {[['ELITE — Every Series',routes.filter(r=>r.grade==='ELITE').map(r=>r.name).join(', '),'#22c55e'],['SOLID / BUILD',routes.filter(r=>r.grade==='SOLID'||r.grade==='BUILD').map(r=>r.name).join(', '),'#d97706'],['CUT — Remove Now',routes.filter(r=>r.grade==='CUT').map(r=>r.name).join(', '),'#dc2626']].map(([l,ct,col])=>(
             <div key={l} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:6,padding:10}}><div style={{fontSize:8,fontWeight:700,color:col,marginBottom:4}}>{l}</div><div style={{fontSize:11,color:col}}>{ct}</div></div>
           ))}
@@ -904,7 +904,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const bestPlay=plays.length?plays.reduce((best,p,_,arr)=>{const cp3=arr.filter(x=>x.con===p.con);const pct=Math.round(cp3.filter(x=>x.res==='Complete').length/cp3.length*100);return pct>best.pct?{name:p.con,pct}:best},{name:'—',pct:0}).name:null
     return(
       <div style={{padding:14,fontFamily:'Helvetica,Arial,sans-serif'}}>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(3,1fr)':'repeat(5,1fr)',gap:5,marginBottom:12}}>
           {[['PLAYS',plays.length||'—','#22c55e'],['OVERALL',cp2!==null?cp2+'%':'—',cp2>=80?'#22c55e':cp2>=65?'#d97706':'#dc2626'],['COOPER',pOf(cm)!==null?pOf(cm)+'%':'—','#22c55e'],['BEN',pOf(bk)!==null?pOf(bk)+'%':'—','#F0B429'],['HOT PLAY',bestPlay||'—','#06b6d4']].map(([l,v,col])=>(
             <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'9px 4px',textAlign:'center'}}>
               <div style={{fontSize:17,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
@@ -931,17 +931,17 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3,marginBottom:7}}>
               {['Clean','Pressure'].map(p=><button key={p} onClick={()=>setPres(p)} style={{padding:'7px',background:pres===p?(p==='Clean'?'#0a1a0a':'#1a0404'):'#111',border:`1px solid ${pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#252525'}`,borderRadius:4,color:pres===p?(p==='Clean'?'#22c55e':'#dc2626'):'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{p}</button>)}
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3,marginBottom:7}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:3,marginBottom:7}}>
               {[['Complete','✓','#22c55e'],['Incomplete','✗','#d97706'],['INT','INT','#dc2626'],['Scramble','RUN','#9ca3af']].map(([r,lbl,col])=><button key={r} onClick={()=>setRes(r)} style={{padding:'8px 2px',background:res===r?col+'22':'#111',border:`1px solid ${res===r?col:'#252525'}`,borderRadius:4,color:res===r?col:'#555',fontSize:10,fontWeight:700,cursor:'pointer'}}>{lbl}</button>)}
             </div>
             <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="Yards"
-              style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'10px',fontSize:24,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
+              style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:isMobile?'14px':'10px',fontSize:isMobile?32:24,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
             <div style={{marginBottom:7}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>WR SEPARATION</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
                 {['Open','Contested','Covered'].map(s2=>{const col=s2==='Open'?'#22c55e':s2==='Contested'?'#d97706':'#dc2626';return<button key={s2} onClick={()=>setSep(s2)} style={{padding:'7px 2px',background:sep===s2?col+'22':'#111',border:`1px solid ${sep===s2?col:'#252525'}`,borderRadius:4,color:sep===s2?col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{s2}</button>})}
               </div>
             </div>
-            <button onClick={logPlay} style={{width:'100%',padding:'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
+            <button onClick={logPlay} style={{width:'100%',padding:isMobile?'18px':'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:isMobile?22:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
             {[...plays].reverse().slice(0,5).map((p,i)=>{
               const rc=p.res==='Complete'?'#22c55e':p.res==='Incomplete'?'#d97706':'#dc2626'
               return<div key={p.id} style={{display:'flex',gap:6,padding:'4px 0',borderBottom:'0.5px solid #1a1a1a',fontSize:9,alignItems:'center'}}>
@@ -972,7 +972,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{display:'flex',gap:6}}>
               <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send(inp)}
                 placeholder="Ask anything — play calls, adjustments, patterns..."
-                style={{flex:1,background:'#111',border:'0.5px solid #252525',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:13,outline:'none'}}/>
+                style={{flex:1,background:'#111',border:'0.5px solid #252525',borderRadius:8,padding:'10px 12px',color:'#fff',fontSize:isMobile?16:13,outline:'none'}}/>
               <button onClick={()=>send(inp)} disabled={load||!inp.trim()}
                 style={{padding:'10px 18px',background:load||!inp.trim()?'#111':'#14532d',border:'none',borderRadius:8,color:load||!inp.trim()?'#555':'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>
                 {load?'...':'Ask'}
@@ -1038,21 +1038,21 @@ function Card({ title, titleClr, children, style = {} }) {
     }
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>⚔️ OFFENSIVE COORDINATOR — AI PLAY CALLER</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Set the situation below · Tap a scenario · Get the exact play call instantly</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10}}>
           <div>
             <div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>DOWN</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:3}}>
               {['1st','2nd','3rd','4th'].map(d=><button key={d} onClick={()=>setDn(d)} style={{padding:'7px 2px',background:dn===d?'#14532d':'#111',border:`1px solid ${dn===d?'#22c55e':'#252525'}`,borderRadius:4,color:dn===d?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{d}</button>)}
             </div>
           </div>
           <div>
             <div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>DISTANCE</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:3}}>
               {['1-3','4-6','7-9','10+'].map(d=><button key={d} onClick={()=>setDist(d)} style={{padding:'7px 2px',background:dist===d?'#14532d':'#111',border:`1px solid ${dist===d?'#22c55e':'#252525'}`,borderRadius:4,color:dist===d?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{d}</button>)}
             </div>
           </div>
@@ -1081,7 +1081,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:12,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.3fr',gap:isMobile?8:12,marginBottom:12}}>
           <div>
             <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TAP A SCENARIO — INSTANT PLAY CALL</div>
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -1179,12 +1179,12 @@ function Card({ title, titleClr, children, style = {} }) {
     }
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#1a0404',border:'1px solid #dc2626',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#dc2626',letterSpacing:2}}>🛡️ DEFENSIVE COORDINATOR — AI COVERAGE CALLER</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Tag what you see · Tap a situation · Get the exact coverage instantly</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #2a0404',borderRadius:8,padding:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #2a0404',borderRadius:8,padding:10}}>
           <div>
             <div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>THEIR FORMATION</div>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
@@ -1211,7 +1211,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:12,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.3fr',gap:isMobile?8:12,marginBottom:12}}>
           <div>
             <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TAP A SITUATION — GET THE COVERAGE</div>
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -1237,7 +1237,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10}}>
           <div style={{background:'#0d0d0d',border:'0.5px solid #2a0404',borderRadius:8,overflow:'hidden'}}>
             <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #2a0404',fontSize:8,fontWeight:700,color:'#dc2626',letterSpacing:1}}>COVERAGE MENU — Tap for coaching</div>
             {coverages.map((cv,i)=>(
@@ -1308,12 +1308,12 @@ function Card({ title, titleClr, children, style = {} }) {
     }
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#07070f',border:'1px solid #7c3aed',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#a78bfa',letterSpacing:2}}>🏉 SPECIAL TEAMS COORDINATOR — AI CALL ASSISTANT</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Set the situation · Tap any scenario · Get the exact special teams call instantly</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #3a1a6e',borderRadius:8,padding:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #3a1a6e',borderRadius:8,padding:10}}>
           {[['SITUATION',['Punt','Kickoff','Field Goal','Return','4th Down','2-Point'],sit,setSit],['FIELD POSITION',['Own 1-15','Own 16-30','Own 31-45','Opp 45-35','Opp 34-20','Opp 19-1'],field,setField],['SCORE',['Tied','Up 1-7','Up 8-14','Down 1-7','Down 8-14','Down 15+'],score,setScore],['TIME',['1st Quarter','2nd Quarter','Halftime','3rd Quarter','Under 4 Min','Final Drive'],time,setTime]].map(([lbl,opts,val,set])=>(
             <div key={lbl}><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>{lbl}</div>
               <div style={{display:'flex',flexDirection:'column',gap:3}}>
@@ -1322,7 +1322,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:12,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.3fr',gap:isMobile?8:12,marginBottom:12}}>
           <div>
             <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TAP A SCENARIO — INSTANT CALL</div>
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -1391,12 +1391,12 @@ function Card({ title, titleClr, children, style = {} }) {
     }
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📋 DEPTH CHART & PERSONNEL — AI PACKAGE ADVISOR</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Who starts · When to sub · Package recommendations · How to use both QBs</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:10}}>
           {[['COOPER MELVIN','QB1 STARTER','#22c55e','#070f07',[['Comp %','84%','#22c55e'],['RTG','87','#22c55e'],['YPA','13.2','#F0B429'],['Deep Ball','88%','#22c55e'],['TTT','2.0s','#22c55e'],['CPOE','+4%','#22c55e']],'START EVERY GAME'],['BEN KOOI','QB2 BACKUP','#F0B429','#0c0a06',[['Comp %','70%','#d97706'],['RTG','71','#d97706'],['YPA','6.5','#d97706'],['Deep Ball','50%','#dc2626'],['TTT','1.9s','#d97706'],['CPOE','-3%','#dc2626']],'SHORT PACKAGE ONLY']].map(([n,role,col,bg,stats,badge])=>(
             <div key={n} style={{background:bg,border:`2px solid ${col}`,borderRadius:10,padding:14}}>
               <div style={{fontSize:10,fontWeight:700,color:col,marginBottom:8,textAlign:'center'}}>{n} — {role}</div>
@@ -1443,12 +1443,12 @@ function Card({ title, titleClr, children, style = {} }) {
       {n:'Fade',col:'#dc2626',pct:0,att:10,epa:-0.8,grade:'CUT'},
     ]
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📊 SEASON DASHBOARD — 2026-2027 Full Overview</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>117 plays · 6 sessions · Both QBs · All concepts · Everything at a glance</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:6,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(3,1fr)':'repeat(6,1fr)',gap:6,marginBottom:12}}>
           {[['117','Total Plays','#22c55e'],['84%','Cooper Comp','#22c55e'],['70%','Ben Comp','#F0B429'],['87','Cooper RTG','#22c55e'],['71','Ben RTG','#F0B429'],['A','Season Grade','#22c55e']].map(([v,l,col])=>(
             <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'10px 4px',textAlign:'center'}}>
               <div style={{fontSize:20,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
@@ -1456,7 +1456,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:12}}>
           <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
             <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',fontSize:9,fontWeight:700,color:'#22c55e',letterSpacing:1}}>SESSION LOG</div>
             {sData.map((s,i)=>(
@@ -1485,7 +1485,7 @@ function Card({ title, titleClr, children, style = {} }) {
             ))}
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?6:8}}>
           {[['CALL EVERY GAME','#22c55e',['Baltimore — 100%, 12.4avg, +1.8 EPA','Post — 100%, 13.1avg, +1.4 EPA','Stick — 100%, 7.7avg, +0.8 EPA','Four Verts — 100%, 22.0avg, +1.9 EPA','Verticals — 88%, 28.5avg, +2.1 EPA']],['BUILD IMMEDIATELY','#d97706',['Out — 100%, keep in every game','Slant — 90%, good opener','Smash — 100%, expand reps','RPO Glance — 100%, develop','Red Zone Package — MUST INSTALL']],['REMOVE NOW','#dc2626',['Sail — 0% all 6 sessions, -0.6 EPA','Fade — 0% all 6 sessions, -0.8 EPA','Right deep routes — 0% both QBs','Ben deep routes — only 50%','Any play with 0% comp rate']]].map(([t,col,items])=>(
             <div key={t} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:8,padding:12}}>
               <div style={{fontSize:9,fontWeight:700,color:col,marginBottom:8,letterSpacing:1}}>{t}</div>
@@ -1546,7 +1546,7 @@ function Card({ title, titleClr, children, style = {} }) {
       setLoad(false)
     }
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:14}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>👥 COACHING STAFF DIRECTORY — Select and Email Any Group</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Select coaches · AI generates the email · Open in Mail · Keep every coach informed every week</div>
@@ -1690,7 +1690,7 @@ function Card({ title, titleClr, children, style = {} }) {
     }
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <div><div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>🏈 PLAYER PROFILES — Full Team Roster</div><div style={{fontSize:8,color:'#555',marginTop:2}}>Every player · Weekly grades · Pros and cons · Next practice plan · AI personal improvement report</div></div>
           <button onClick={()=>setAddMode(!addMode)} style={{padding:'7px 12px',background:'#14532d',border:'none',borderRadius:6,color:'#22c55e',fontSize:10,fontWeight:700,cursor:'pointer'}}>+ Add Player</button>
@@ -1734,7 +1734,7 @@ function Card({ title, titleClr, children, style = {} }) {
                   <div style={{textAlign:'center',flexShrink:0}}><div style={{fontSize:34,fontWeight:700,color:gc(sel.grade)}}>{sel.grade}</div><div style={{fontSize:8,color:'#555'}}>SEASON GRADE</div></div>
                 </div>
                 {sel.stats&&Object.keys(sel.stats).length>0&&(
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:5,marginBottom:14}}>
+                  <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(3,1fr)':'repeat(6,1fr)',gap:5,marginBottom:14}}>
                     {Object.entries(sel.stats).map(([k,v])=>(
                       <div key={k} style={{background:'#111',borderRadius:6,padding:'7px 4px',textAlign:'center'}}>
                         <div style={{fontSize:13,fontWeight:700,color:sel.col}}>{v}</div>
@@ -1756,7 +1756,7 @@ function Card({ title, titleClr, children, style = {} }) {
                     </div>
                   </div>
                 )}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:12}}>
                   <div><div style={{fontSize:9,fontWeight:700,color:'#22c55e',marginBottom:5}}>STRENGTHS</div>{sel.pros?.map((p,i)=><div key={i} style={{fontSize:11,color:'#9ca3af',padding:'4px 0',borderBottom:'0.5px solid #1d3a1d',lineHeight:1.5}}><span style={{color:'#22c55e',marginRight:5}}>✓</span>{p}</div>)}</div>
                   <div><div style={{fontSize:9,fontWeight:700,color:'#dc2626',marginBottom:5}}>NEEDS IMPROVEMENT</div>{sel.cons?.map((x,i)=><div key={i} style={{fontSize:11,color:'#fca5a5',padding:'4px 0',borderBottom:'0.5px solid #2a0404',lineHeight:1.5}}><span style={{color:'#dc2626',marginRight:5}}>✗</span>{x}</div>)}</div>
                 </div>
@@ -1813,7 +1813,7 @@ function Card({ title, titleClr, children, style = {} }) {
       return<div key={i} style={{fontSize:12,color:isBullet?'#ccc':'#9ca3af',lineHeight:1.7,paddingLeft:isBullet?14:0}}>{line}</div>
     })
     return(
-      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?12:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:14,marginBottom:16}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2,marginBottom:3}}>📄 SCOUT REPORT GENERATOR — Formal College Evaluation</div>
           <div style={{fontSize:8,color:'#555',lineHeight:1.6}}>AI writes a professional scouting report in the style of D1/D2/D3 recruiting staff · Based on your actual 117-play season data · Print and hand to any college coach you meet</div>
@@ -1847,7 +1847,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:8,letterSpacing:1}}>PLAYER SNAPSHOT</div>
             <div style={{background:p.col+'08',border:`1px solid ${p.col}33`,borderRadius:10,padding:14,marginBottom:12}}>
               <div style={{fontSize:14,fontWeight:700,color:p.col,marginBottom:8}}>{target} — {style}</div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:10}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginBottom:10}}>
                 {[['Comp%',p.comp,p.col],['Passer RTG',p.rtg,p.col],['Yds/Play',p.ypa,'#F0B429'],['Deep Ball',p.deep,p.deep==='88%'?'#22c55e':'#d97706'],['Hash Acc.',p.hash,parseInt(p.hash)>=73?'#22c55e':'#dc2626'],['CPOE',p.cpoe,p.cpoe.startsWith('+')?'#22c55e':'#dc2626']].map(([l,v,col])=>(
                   <div key={l} style={{background:'#111',borderRadius:6,padding:'8px 4px',textAlign:'center'}}>
                     <div style={{fontSize:13,fontWeight:700,color:col}}>{v}</div>
@@ -1925,7 +1925,7 @@ function Card({ title, titleClr, children, style = {} }) {
     }
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🎬 FILM NOTES — Tag Every Rep · AI Builds the Coaching Report</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Film every practice on a tripod · Review the footage · Log what you see · AI turns your notes into an NFL-level coaching report after 2 sessions</div>
@@ -1937,7 +1937,7 @@ function Card({ title, titleClr, children, style = {} }) {
         </button>
         {setupOpen&&(
           <div style={{background:'#07070f',border:'1px solid #7c3aed',borderRadius:8,padding:14,marginBottom:12}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10}}>
               <div>
                 <div style={{fontSize:9,fontWeight:700,color:'#a78bfa',marginBottom:6,letterSpacing:1}}>CAMERA POSITION</div>
                 {['Set up your phone or iPad on a tripod at the 50-yard line','Height: waist to chest level of the players (not too high, not too low)','Angle: slightly behind the QB so you see the whole field and his release','For 7on7: position yourself 10 yards behind the QB on the sideline','Keep the whole formation in frame — you need to see routes develop'].map((t,i)=><div key={i} style={{fontSize:11,color:'#ccc',padding:'4px 0',borderBottom:'0.5px solid #1a1a2e',lineHeight:1.5,display:'flex',gap:6}}><span style={{color:'#a78bfa',flexShrink:0}}>→</span>{t}</div>)}
@@ -1949,7 +1949,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
             <div style={{marginTop:10,background:'#1a0a2e',borderRadius:6,padding:10}}>
               <div style={{fontSize:9,fontWeight:700,color:'#a78bfa',marginBottom:4}}>THE PROCESS — Two sessions builds a coaching report NFL teams pay millions for</div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6}}>
                 {[['Session 1','Film the practice. Log 20+ notes here in real time or during film review.'],['Session 2','Film again. Add 20+ more notes. Patterns start to appear.'],['AI Analyze','Hit AI Summarize. Claude reads all notes and writes the coaching report.'],['Next Practice','Hand the printed report to every position coach. Act on it immediately.']].map(([step,desc])=>(
                   <div key={step} style={{background:'#0a0612',borderRadius:6,padding:8,textAlign:'center'}}>
                     <div style={{fontSize:10,fontWeight:700,color:'#a78bfa',marginBottom:4}}>{step}</div>
@@ -1968,7 +1968,7 @@ function Card({ title, titleClr, children, style = {} }) {
               <select value={player} onChange={e=>setPlayer(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'8px',fontSize:12}}>{players.map(p=><option key={p} value={p}>{p}</option>)}</select>
             </div>
             <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:4}}>SESSION</div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:3}}>
                 {sessions.map(s=><button key={s} onClick={()=>setSess(s)} style={{padding:'5px 2px',background:sess===s?'#0c1a3a':'#111',border:`1px solid ${sess===s?'#06b6d4':'#252525'}`,borderRadius:4,color:sess===s?'#06b6d4':'#555',fontSize:8,fontWeight:700,cursor:'pointer'}}>{s}</button>)}
               </div>
             </div>
@@ -2066,7 +2066,7 @@ function Card({ title, titleClr, children, style = {} }) {
       )
       if(s.type==='overview')return(
         <div style={{padding:fs?'32px 48px':'16px 20px'}}>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:16}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:16}}>
             {[['117','Total Plays','#22c55e'],['84%','Cooper Comp','#22c55e'],['70%','Ben Comp','#F0B429'],['87','Cooper RTG','#22c55e'],['71','Ben RTG','#F0B429'],['6','Sessions','#ccc'],['13.2','Cooper YPA','#22c55e'],['A','Season Grade','#22c55e']].map(([v,l,col])=>(
               <div key={l} style={{background:'#111',borderRadius:8,padding:'12px 4px',textAlign:'center'}}>
                 <div style={{fontSize:fs?36:20,fontWeight:700,color:col}}>{v}</div>
@@ -2074,7 +2074,7 @@ function Card({ title, titleClr, children, style = {} }) {
               </div>
             ))}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10}}>
             {[['STRENGTHS — What is Working',['Baltimore 100% — best big play in script','Post 100% — primary 1st down weapon','Stick 100% — call every series, never fails','Cooper deep ball 88% — elite vs NFL 52% avg','Both QBs 80% at College Showcase under pressure'],'#22c55e'],['GAPS — What We Must Fix',['Red zone 0% BOTH QBs — critical, install package now','Sail 0% and Fade 0% — remove from live script NOW','Right hash deep routes — 0% all season','Ben deep ball 50% — keep him short only','Hash accuracy 73% target — need to reach 80%+'],'#dc2626']].map(([title,items,col])=>(
               <div key={title} style={{background:col+'08',border:`0.5px solid ${col}22`,borderRadius:8,padding:12}}>
                 <div style={{fontSize:fs?14:10,fontWeight:700,color:col,marginBottom:8}}>{title}</div>
@@ -2095,7 +2095,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{flex:1}}>
               <div style={{fontSize:fs?28:16,fontWeight:700,color:'#fff',marginBottom:6}}>Cooper Melvin — QB1 Starter</div>
               <div style={{fontSize:fs?15:10,color:'#22c55e',fontWeight:700,marginBottom:14,letterSpacing:1}}>KAEPERNICK ARM · LAMAR MOBILITY · MAHOMES IQ</div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:14}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:14}}>
                 {[['84%','Comp Rate','#22c55e'],['658','Total Yards','#fff'],['13.2','Yds/Play','#F0B429'],['87','Passer RTG','#22c55e']].map(([v,l,col])=>(
                   <div key={l} style={{background:'#111',borderRadius:8,padding:'10px 4px',textAlign:'center'}}>
                     <div style={{fontSize:fs?30:18,fontWeight:700,color:col}}>{v}</div>
@@ -2103,7 +2103,7 @@ function Card({ title, titleClr, children, style = {} }) {
                   </div>
                 ))}
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:8}}>
                 <div style={{background:'#0a1a0a',borderRadius:8,padding:10}}>
                   <div style={{fontSize:fs?13:9,fontWeight:700,color:'#22c55e',marginBottom:6}}>NEXTGEN vs NFL</div>
                   {[['Deep Ball','88%','52% NFL avg — ELITE ✓'],['Air Yards','13.2','8.0 NFL avg — ABOVE ✓'],['TTT','2.0s','2.36s NFL avg — IN RANGE ✓'],['CPOE','+4%','Outperforms projection ✓']].map(([l,v,n])=>(
@@ -2132,7 +2132,7 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{flex:1}}>
               <div style={{fontSize:fs?28:16,fontWeight:700,color:'#fff',marginBottom:4}}>Ben Kooi — QB2 Backup</div>
               <div style={{fontSize:fs?14:10,color:'#F0B429',fontWeight:700,marginBottom:14,letterSpacing:1}}>HIGH UPSIDE · DO NOT GIVE UP · 6 MONTHS TO QB1</div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:14}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:14}}>
                 {[['70%','Comp Rate','#d97706'],['310','Yards','#fff'],['6.5','Yds/Play','#d97706'],['71','Passer RTG','#d97706']].map(([v,l,col])=>(
                   <div key={l} style={{background:'#111',borderRadius:8,padding:'10px 4px',textAlign:'center'}}>
                     <div style={{fontSize:fs?30:18,fontWeight:700,color:col}}>{v}</div>
@@ -2140,7 +2140,7 @@ function Card({ title, titleClr, children, style = {} }) {
                   </div>
                 ))}
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:8}}>
                 <div style={{background:'#0c0a06',borderRadius:8,padding:10}}>
                   <div style={{fontSize:fs?13:9,fontWeight:700,color:'#F0B429',marginBottom:6}}>SESSION TREND</div>
                   {[['4/21','B · 70% comp'],['4/27','C+ · 67% comp'],['4/30','C · 50% comp'],['Show.','B+ · 80% 🔥 BEST'],['5/8','D · 40% comp'],['5/12','C+ · 55% ↑']].map(([d,g])=>(
@@ -2264,7 +2264,7 @@ function Card({ title, titleClr, children, style = {} }) {
     return(
       <div style={{background:'#0a0d0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginTop:10}}>
         <div style={{fontSize:9,fontWeight:700,color:'#22c55e',letterSpacing:2,marginBottom:10}}>📡 LIVE NEXTGEN ANALYTICS — {plays.length} plays tracked</div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?6:8,marginBottom:10}}>
           <div style={{background:'#111',border:`0.5px solid ${olColor}33`,borderRadius:8,padding:10}}>
             <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:4}}>OL PRESSURE RATE</div>
             <div style={{fontSize:28,fontWeight:700,color:olColor,lineHeight:1}}>{pressureRate}%</div>
@@ -2298,7 +2298,7 @@ function Card({ title, titleClr, children, style = {} }) {
         {sepData.length>0&&(
           <div style={{background:'#111',borderRadius:8,padding:10}}>
             <div style={{fontSize:9,fontWeight:700,color:'#555',marginBottom:6}}>TARGET SEPARATION GRADES — {sepData.length} tracked throws</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6}}>
               {[[openPlays,'OPEN (3+ yds)','Receiver had clean separation','#22c55e'],[contestedPlays,'CONTESTED (1-2 yds)','Tight window throw needed','#d97706'],[coveredPlays,'COVERED (0 yds)','Defender in position, bad read','#dc2626']].map(([count,label,note,col])=>(
                 <div key={label} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:6,padding:8,textAlign:'center'}}>
                   <div style={{fontSize:18,fontWeight:700,color:col}}>{count}</div>
@@ -2391,7 +2391,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const gc=g=>g==='ELITE'?'#22c55e':g==='SOLID'?'#d97706':g==='BUILD'?'#d97706':'#dc2626'
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>⚡ QUICK CALL CARD — Situation to Play in 5 Seconds</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Set situation · Top 3 plays appear instantly · Tap for AI explanation · Log the call</div>
@@ -2408,7 +2408,7 @@ function Card({ title, titleClr, children, style = {} }) {
           </div>
         )}
 
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginBottom:10,background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:10}}>
           {[['DOWN',['1st','2nd','3rd','4th'],dn,setDn,'#22c55e'],['DISTANCE',['Short 1-3','Med 4-7','Long 8-9','10+'],dist,setDist,'#22c55e'],['HASH',['Left','Middle','Right'],hash,setHash,'#06b6d4'],['FIELD ZONE',['Own 10-20','Open Field','Red Zone'],zone,setZone,'#06b6d4'],['QB',['Cooper','Ben'],qb,setQb,'#22c55e'],['SCORE',['Tied','Up 7+','Down 7+'],score,setScore,'#dc2626']].map(([lbl,opts,val,set,ac])=>(
             <div key={lbl}><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>{lbl}</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
@@ -2418,7 +2418,7 @@ function Card({ title, titleClr, children, style = {} }) {
           ))}
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:10}}>
           <div>
             <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>TOP 3 PLAYS — CALL THESE NOW</div>
             <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -2547,12 +2547,12 @@ function Card({ title, titleClr, children, style = {} }) {
     React.useEffect(()=>ref.current?.scrollIntoView({behavior:'smooth'}),[msgs])
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🔍 OPPONENT SCOUTING — Know What You Are Facing</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Tag their tendencies before the game · Log what you see live · AI builds the counter attack instantly</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1.2fr',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.2fr',gap:isMobile?8:12}}>
           <div>
             <div style={{marginBottom:10}}>
               <div style={{fontSize:8,color:'#555',marginBottom:4,letterSpacing:1}}>OPPONENT NAME</div>
@@ -2660,12 +2660,12 @@ function Card({ title, titleClr, children, style = {} }) {
     const remaining=script.filter(s=>!checked.includes(s.n))
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#1a1400',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📋 PRACTICE SCRIPT BUILDER — AI Builds the Plan, You Run It</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Set your focus · AI builds a script from your gap data · Check off each rep as you run it · Never show up to practice without a plan again</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1.5fr',gap:isMobile?8:12}}>
           <div style={{background:'#0d0d0d',border:'0.5px solid #252525',borderRadius:8,padding:14}}>
             <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:10,letterSpacing:1}}>BUILD TODAY\'S SCRIPT</div>
             <div style={{marginBottom:10}}>
@@ -2778,7 +2778,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const gc=p=>p>=90?'#22c55e':p>=70?'#d97706':p>=50?'#ea580c':'#dc2626'
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>📊 LIVE SESSION SCOREBOARD — Real Time Every Play</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Log plays · Everyone sees the same live data · Drive summary every 5 plays · Personal bests tracked automatically</div>
@@ -2791,7 +2791,7 @@ function Card({ title, titleClr, children, style = {} }) {
           </div>
         )}
 
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:12}}>
           {[['PLAYS',plays.length,'#22c55e'],['COOPER',cm.length?`${pct(cm)}%`:'—',pct(cm)>=80?'#22c55e':pct(cm)>=65?'#d97706':'#dc2626'],['BEN',bk.length?`${pct(bk)}%`:'—',pct(bk)>=80?'#22c55e':pct(bk)>=65?'#d97706':'#dc2626'],['HOT',plays.length?conceptBoard[0]?.ct||'—':'—','#F0B429']].map(([l,v,col])=>(
             <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'12px 6px',textAlign:'center'}}>
               <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
@@ -2800,14 +2800,14 @@ function Card({ title, titleClr, children, style = {} }) {
           ))}
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:12}}>
           {[[cm,'COOPER MELVIN','#22c55e','#070f07',cmConsec(),seasonBests.cooper],[bk,'BEN KOOI','#F0B429','#0c0a06',bkConsec(),seasonBests.ben]].map(([ps,name,col,bg,consec,bests])=>(
             <div key={name} style={{background:bg,border:`1px solid ${col}`,borderRadius:10,padding:14}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
                 <div style={{fontSize:10,fontWeight:700,color:col}}>{name}</div>
                 {consec>=3&&<div style={{background:col+'22',color:col,fontSize:8,fontWeight:700,padding:'2px 8px',borderRadius:4,border:`0.5px solid ${col}44`}}>🔥 {consec} straight</div>}
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:8}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6,marginBottom:8}}>
                 {[['COMP%',ps.length?`${pct(ps)}%`:'—',gc(pct(ps))],['ATT',ps.length,'#9ca3af'],['YPA',ay(ps),'#F0B429']].map(([l,v,c])=>(
                   <div key={l} style={{textAlign:'center'}}><div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:7,color:'#555'}}>{l}</div></div>
                 ))}
@@ -2818,7 +2818,7 @@ function Card({ title, titleClr, children, style = {} }) {
           ))}
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:isMobile?8:10,marginBottom:10}}>
           <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden'}}>
             <div style={{background:'#0a0a0a',padding:'6px 12px',borderBottom:'0.5px solid #1d3a1d',fontSize:9,fontWeight:700,color:'#22c55e',letterSpacing:1}}>LIVE LEADERBOARD</div>
             {conceptBoard.length===0&&<div style={{padding:'20px',textAlign:'center',fontSize:11,color:'#333'}}>Log plays to see live rankings</div>}
@@ -2845,10 +2845,10 @@ function Card({ title, titleClr, children, style = {} }) {
             <select value={concept} onChange={e=>setConcept(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:13,marginBottom:6}}>
               {concepts.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3,marginBottom:6}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:3,marginBottom:6}}>
               {['Complete','Incomplete','INT','Scramble'].map(r=>{const col=r==='Complete'?'#22c55e':r==='INT'?'#dc2626':'#d97706';return<button key={r} onClick={()=>setResult(r==='INT'?'Interception':r)} style={{padding:'7px 2px',background:result===(r==='INT'?'Interception':r)?col+'22':'#111',border:`0.5px solid ${result===(r==='INT'?'Interception':r)?col:'#252525'}`,borderRadius:4,color:result===(r==='INT'?'Interception':r)?col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{r}</button>})}
             </div>
-            <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="Yards" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:'8px',fontSize:22,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
+            <input type="number" value={yds} onChange={e=>setYds(e.target.value)} placeholder="Yards" style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#fff',padding:isMobile?'14px':'8px',fontSize:isMobile?30:22,fontWeight:700,outline:'none',marginBottom:8,textAlign:'center'}}/>
             <button onClick={log} style={{width:'100%',padding:'13px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:14,cursor:'pointer'}}>+ LOG PLAY</button>
           </div>
         </div>
@@ -2907,7 +2907,7 @@ function Card({ title, titleClr, children, style = {} }) {
     const quickQs=['What is our best play on 3rd and short?','What play beats Cover 2 with our guys?','When do we put Ben in?','What should we never call?','How does Cooper compare to a D2 recruit?','What is our biggest gap to fix?','Best play for the college showcase?','What does Ben need to work on today?']
 
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>📚 COACHING QUICK REFERENCE — Everything in One Place</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>Game day cheat sheet · Formation diagrams · Ask any question · Weekly email generator · One screen coaches live on</div>
@@ -2930,7 +2930,7 @@ function Card({ title, titleClr, children, style = {} }) {
         </div>
 
         {section==='cheatsheet'&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?8:10}}>
             <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:12}}>
               <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:8,letterSpacing:1}}>CALL EVERY PLAY</div>
               {[['Baltimore','Any down any hash — +1.8 EPA'],['Post','1st down left hash — +1.4 EPA'],['Stick','Every series never fails — +0.8 EPA'],['Four Verts','Deep shot showcase — +1.9 EPA'],['Verticals','Winning big plays — +2.1 EPA']].map(([p,n])=><div key={p} style={{padding:'6px 0',borderBottom:'0.5px solid #1d3a1d'}}><div style={{fontSize:11,fontWeight:700,color:'#22c55e'}}>{p}</div><div style={{fontSize:8,color:'#555'}}>{n}</div></div>)}
@@ -2953,7 +2953,7 @@ function Card({ title, titleClr, children, style = {} }) {
         )}
 
         {section==='formations'&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:8}}>
             {formations.map(f=>(
               <div key={f.name} style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:12,cursor:'pointer'}} onClick={()=>ask(`Explain exactly how to run the ${f.name} route concept and what the QB reads step by step`)}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
@@ -3239,12 +3239,12 @@ function Card({ title, titleClr, children, style = {} }) {
     const ypa=tot?(filtered.reduce((a,t)=>a+t.yds,0)/tot).toFixed(1):0
     const pr=filtered.filter(t=>t.pressure).length
     return(
-      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>🗺 HEAT MAPS & FIELD VISUALIZATIONS — Every Player · Every Play</div>
           <div style={{fontSize:8,color:'#555',marginTop:2}}>99 plays mapped to field coordinates · Heat map · Throw dots · Zone chart · Concept bars · Session trends · Pressure breakdown</div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?6:8,marginBottom:10}}>
           <div><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>QB</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
               {[['both','Both'],['cooper','Cooper'],['ben','Ben']].map(([k,l])=>(
@@ -3263,7 +3263,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </select>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:10}}>
           {[['heatmap','🔥 Heat Map','Zones by comp%'],['throwmap','📍 Throw Map','Every throw plotted'],['zonechart','🗺 Zone Chart','Field breakdown'],['conceptbars','📊 Concept Bars','All concepts ranked']].map(([k,l,d])=>(
             <button key={k} onClick={()=>setView(k)} style={{padding:'9px 5px',border:`1px solid ${view===k?'#22c55e':'#1a1a1a'}`,borderRadius:6,background:view===k?'#0a1a0a':'#0d0d0d',cursor:'pointer',textAlign:'center'}}>
               <div style={{fontSize:10,fontWeight:700,color:view===k?'#22c55e':'#555'}}>{l}</div>
@@ -3271,7 +3271,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </button>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(3,1fr)':'repeat(5,1fr)',gap:5,marginBottom:10}}>
           {[['PLAYS',tot,'#22c55e'],['COMP%',`${pct}%`,gc(pct)],['YDS/ATT',ypa,'#F0B429'],['INTS',ints,ints===0?'#22c55e':'#dc2626'],['PRESSURE',`${tot?Math.round(pr/tot*100):0}%`,pr/tot<0.25?'#22c55e':'#d97706']].map(([l,v,col])=>(
             <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:7,padding:'8px 4px',textAlign:'center'}}>
               <div style={{fontSize:17,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
@@ -3302,7 +3302,7 @@ function Card({ title, titleClr, children, style = {} }) {
           <div>
             <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:5,letterSpacing:1}}>FIELD ZONE COMPLETION% — tap zone for AI coaching on that area</div>
             <canvas ref={zoneRef} width={620} height={340} style={{width:'100%',borderRadius:8,border:'1px solid #1d3a1d',display:'block',marginBottom:10}}/>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:6}}>
               {[['🟢 ELITE (80%+)','#22c55e','Left Deep, Mid Deep, Mid Short — call these every game · best zones on the field'],['🟡 DEVELOPING (65-79%)','#d97706','Left Short, Right Short — solid but hash route work needed to improve'],['🔴 DEAD ZONES (0%)','#dc2626','Right Deep, Red Zone — 0% both QBs all season · critical gaps to fix immediately']].map(([l,col,desc])=>(
                 <div key={l} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:6,padding:10}}>
                   <div style={{fontSize:9,fontWeight:700,color:col,marginBottom:4}}>{l}</div>
@@ -3353,7 +3353,7 @@ function Card({ title, titleClr, children, style = {} }) {
                 ))}
               </div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:8}}>
               {[['Clean Pocket',filtered.filter(t=>!t.pressure)],['Under Pressure',filtered.filter(t=>t.pressure)]].map(([lbl,plays])=>{
                 const p=plays.length?Math.round(plays.filter(t=>t.result==='Complete').length/plays.length*100):0
                 return(
@@ -3414,13 +3414,13 @@ function Card({ title, titleClr, children, style = {} }) {
     }
     const total=Object.values(counts).reduce((a,v)=>a+v,0)
     return(
-      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+      <div style={{padding:isMobile?12:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginBottom:16}}>
           <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2,marginBottom:3}}>💾 DATA MANAGER — Persistent Storage</div>
           <div style={{fontSize:8,color:'#555',lineHeight:1.7}}>Every play logged · every film note · every player grade · every practice rep saves automatically. Data persists through page refresh, closing the browser, and reopening on any device. Nothing ever disappears.</div>
         </div>
         {status&&<div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:6,padding:'9px 14px',marginBottom:12,fontSize:12,fontWeight:700,color:'#22c55e'}}>✓ {status}</div>}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:14}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:6,marginBottom:14}}>
           {[['Total Items',total,'#22c55e'],['Plays',(counts.gameday_plays||0)+(counts.practice_plays||0)+(counts.scoreboard_plays||0),'#22c55e'],['Film Notes',counts.film_notes||0,'#06b6d4'],['Players',counts.player_profiles||0,'#F0B429']].map(([l,v,col])=>(
             <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'12px 4px',textAlign:'center'}}>
               <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
@@ -3440,7 +3440,7 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?8:10}}>
           <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:14}}>
             <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:6}}>💾 Auto-Save Active</div>
             <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Every play saves instantly. A green SAVED flash appears in the header every time data is stored. You never have to tap save.</div>
@@ -3456,6 +3456,49 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{fontSize:12,color:'#9ca3af',lineHeight:1.7,marginBottom:8}}>Wipes everything. Use at the start of a new season. Every play, note, and grade removed permanently.</div>
             <button onClick={clearAll} style={{width:'100%',padding:'10px',background:'#1a0404',border:'1px solid #dc2626',borderRadius:6,color:'#dc2626',fontWeight:700,fontSize:12,cursor:'pointer'}}>Clear All Data</button>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+
+  const MobileTabMenu=({tab,setTab})=>{
+    const [open,setOpen]=React.useState(false)
+    const all=[
+      {k:'overview',l:'Overview'},{k:'charts',l:'Charts'},{k:'plays',l:'Play Calls'},
+      {k:'players',l:'Players'},{k:'heatmaps',l:'Heat Maps'},{k:'tracking',l:'Tracking'},
+      {k:'nextgen',l:'NextGen'},{k:'radar',l:'Radar'},{k:'epa',l:'EPA'},
+      {k:'projection',l:'Projection'},{k:'recruit',l:'Recruit'},
+      {k:'scoutreport',l:'Scout Report'},{k:'routetree',l:'Route Tree'},
+      {k:'filmnotes',l:'Film Notes'},{k:'depthchart',l:'Depth Chart'},
+      {k:'playerprofiles',l:'Player Profiles'},{k:'staff',l:'Staff'},
+      {k:'gameplan',l:'Game Plan'},{k:'practicescript',l:'Practice Script'},
+      {k:'logger',l:'Practice Logger'},{k:'livescoreboard',l:'Live Board'},
+      {k:'opponentscouting',l:'Opp Scout'},{k:'coachquickref',l:'Coach Ref'},
+      {k:'presentation',l:'Present'},{k:'datamanager',l:'Data Manager'},
+      {k:'specialteams',l:'Special Teams'},
+    ]
+    if(!open)return(
+      <div style={{background:'#0a0a0a',borderBottom:'0.5px solid #1d3a1d',padding:'0 12px'}}>
+        <button onClick={()=>setOpen(true)} style={{width:'100%',padding:'9px 0',background:'transparent',border:'none',color:'#9ca3af',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',letterSpacing:0.5}}>
+          <span style={{color:'#22c55e',fontSize:12}}>≡ ALL TABS</span>
+          <span style={{color:'#555',fontSize:10}}>Browse 25+ tabs ▼</span>
+        </button>
+      </div>
+    )
+    return(
+      <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:500,display:'flex',flexDirection:'column'}}>
+        <div style={{background:'#0a0a0a',borderBottom:'2px solid #22c55e',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{color:'#22c55e',fontSize:13,fontWeight:700}}>ALL TABS</span>
+          <button onClick={()=>setOpen(false)} style={{background:'#1a0a0a',border:'1px solid #dc2626',borderRadius:6,color:'#dc2626',fontSize:12,fontWeight:700,padding:'6px 14px',cursor:'pointer'}}>✕ Close</button>
+        </div>
+        <div style={{flex:1,overflowY:'auto',background:'#050505'}}>
+          {all.map(t=>(
+            <button key={t.k} onClick={()=>{setTab(t.k);setOpen(false)}} style={{width:'100%',padding:'16px',background:tab===t.k?'#0a1a0a':'transparent',border:'none',borderBottom:'0.5px solid #1a1a1a',color:tab===t.k?'#22c55e':'#9ca3af',fontSize:15,fontWeight:tab===t.k?700:400,cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              {t.l}
+              {tab===t.k&&<span style={{color:'#22c55e',fontSize:11,background:'#14532d',padding:'2px 8px',borderRadius:4}}>active</span>}
+            </button>
+          ))}
         </div>
       </div>
     )
@@ -4176,7 +4219,7 @@ export default function App() {
         <div style={{ display:'flex', gap:7 }}>
           {qbs.map(q=><button key={q.qb} onClick={()=>setPlayerQB(q.qb)} style={{ padding:'7px 20px', borderRadius:6, border:'none', background:q.qb===playerQB?'#1a6b2a':'#1a2e1a', color:q.qb===playerQB?'white':'#9ca3af', fontFamily:'inherit', fontSize:13, fontWeight:700, cursor:'pointer' }}>{q.qb}</button>)}
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+        <div style={{ display:'grid', gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:8 }}>
           {[{lbl:'PLAYS',val:pQB.plays,clr:C.text},{lbl:'COMPLETIONS',val:pQB.comp,clr:C.green},{lbl:'COMP %',val:pQB.pct+'%',clr:pctClr(pQB.pct)},{lbl:'TOTAL YARDS',val:pQB.yds,clr:C.gold}].map(k=>
             <Card key={k.lbl} style={{ textAlign:'center' }}>
               <div style={{ fontSize:9, color:'#9ca3af', letterSpacing:1.5, marginBottom:4 }}>{k.lbl}</div>
