@@ -865,6 +865,9 @@ function Card({ title, titleClr, children, style = {} }) {
     const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Game day mode. I know your full season AND any plays you log below in real time. Quick answers only — what do you need right now?'}])
     const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
     const [plays,setPlays]=React.useState([])
+
+    React.useEffect(()=>{loadData('gameday_plays',[]).then(d=>{if(d&&d.length)setPlays(d)})},[])
+    React.useEffect(()=>{if(plays.length>0){saveData('gameday_plays',plays);flash()}},[plays])
     const [qb,setQb]=React.useState('Cooper Melvin');const [con,setCon]=React.useState('Baltimore')
     const [res,setRes]=React.useState('Complete');const [yds,setYds]=React.useState('')
     const [dn,setDn]=React.useState('1st');const [dist,setDist]=React.useState('10')
@@ -1610,6 +1613,10 @@ function Card({ title, titleClr, children, style = {} }) {
 
   const PlayerProfilesTab=()=>{
     const [selId,setSelId]=React.useState('cooper')
+
+    React.useEffect(()=>{loadData('player_profiles',null).then(d=>{if(d&&d.length)setPlayers(d)})},[])
+    React.useEffect(()=>{saveData('player_profiles',players);flash()},[players])
+
     const [load,setLoad]=React.useState(false)
     const [aiReport,setAiReport]=React.useState('')
     const [addMode,setAddMode]=React.useState(false)
@@ -2327,6 +2334,10 @@ function Card({ title, titleClr, children, style = {} }) {
     const [aiTip,setAiTip]=React.useState('')
     const [tipLoad,setTipLoad]=React.useState(false)
     const [favs,setFavs]=React.useState(['Baltimore','Stick','Post'])
+
+    React.useEffect(()=>{loadData('quick_favs',['Baltimore','Stick','Post']).then(d=>{if(d)setFavs(d)})},[])
+    React.useEffect(()=>{saveData('quick_favs',favs)},[favs])
+
     const [selPlay,setSelPlay]=React.useState(null)
     const [playExp,setPlayExp]=React.useState('')
     const [expLoad,setExpLoad]=React.useState(false)
@@ -2609,6 +2620,10 @@ function Card({ title, titleClr, children, style = {} }) {
     const [reps,setReps]=React.useState(20)
     const [load,setLoad]=React.useState(false)
     const [checked,setChecked]=React.useState([])
+
+    React.useEffect(()=>{loadData('practice_checked',[]).then(d=>{if(d)setChecked(d)})},[])
+    React.useEffect(()=>{saveData('practice_checked',checked)},[checked])
+
     const [aiScript,setAiScript]=React.useState('')
 
     const focusOptions=['Balanced','Red Zone Install','Hash Accuracy','Deep Ball','Short Game','Ben Development','Cooper Showcase','Pressure Situations']
@@ -3355,6 +3370,93 @@ function Card({ title, titleClr, children, style = {} }) {
             </div>
           </div>
         )}
+      </div>
+    )
+  }
+
+
+  const DataManagerTab=()=>{
+    const [counts,setCounts]=React.useState({})
+    const [status,setStatus]=React.useState('')
+    const keys=['gameday_plays','practice_plays','film_notes','scoreboard_plays','player_profiles','quick_favs','practice_checked']
+    const labels={'gameday_plays':'Game Day Plays','practice_plays':'Practice Plays','film_notes':'Film Notes','scoreboard_plays':'Scoreboard Plays','player_profiles':'Player Profiles','quick_favs':'Favorite Plays','practice_checked':'Practice Reps'}
+    const icons={'gameday_plays':'🏈','practice_plays':'📋','film_notes':'🎬','scoreboard_plays':'📊','player_profiles':'👤','quick_favs':'⭐','practice_checked':'✓'}
+    React.useEffect(()=>{
+      const load=async()=>{
+        const c2={}
+        for(const k of keys){
+          try{const r=await window.storage.get(`westfield_v1_${k}`);if(r&&r.value){const p=JSON.parse(r.value);c2[k]=Array.isArray(p)?p.length:typeof p==='object'?Object.keys(p).length:1}else c2[k]=0}catch(e){c2[k]=0}
+        }
+        setCounts(c2)
+      }
+      load()
+    },[])
+    const clearKey=async(k)=>{
+      if(!window.confirm(`Clear all ${labels[k]}?`))return
+      try{await window.storage.delete(`westfield_v1_${k}`);setCounts(p=>({...p,[k]:0}));setStatus(`${labels[k]} cleared`);setTimeout(()=>setStatus(''),2000)}catch(e){}
+    }
+    const clearAll=async()=>{
+      if(!window.confirm('Clear ALL saved data? Cannot be undone.'))return
+      for(const k of keys){try{await window.storage.delete(`westfield_v1_${k}`)}catch(e){}}
+      setCounts({});setStatus('All data cleared');setTimeout(()=>setStatus(''),3000)
+    }
+    const exportCSV=async()=>{
+      try{
+        const rows=['Date,QB,Concept,Result,Yards,Hash,Pressure']
+        for(const k of['gameday_plays','practice_plays','scoreboard_plays']){
+          try{const r=await window.storage.get(`westfield_v1_${k}`);if(r&&r.value){JSON.parse(r.value).forEach(p=>{rows.push(`${p.time||''},${p.qb||''},${p.con||p.concept||''},${p.res||p.result||''},${p.yds||0},${p.hash||''},${p.pres||false}`)})}}catch(e){}
+        }
+        const blob=new Blob([rows.join('\n')],{type:'text/csv'})
+        const url=URL.createObjectURL(blob)
+        const a=document.createElement('a');a.href=url;a.download='westfield_plays.csv';a.click()
+        URL.revokeObjectURL(url);setStatus('CSV downloaded');setTimeout(()=>setStatus(''),2500)
+      }catch(e){setStatus('Export failed')}
+    }
+    const total=Object.values(counts).reduce((a,v)=>a+v,0)
+    return(
+      <div style={{padding:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:14,marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2,marginBottom:3}}>💾 DATA MANAGER — Persistent Storage</div>
+          <div style={{fontSize:8,color:'#555',lineHeight:1.7}}>Every play logged · every film note · every player grade · every practice rep saves automatically. Data persists through page refresh, closing the browser, and reopening on any device. Nothing ever disappears.</div>
+        </div>
+        {status&&<div style={{background:'#0a1a0a',border:'1px solid #22c55e',borderRadius:6,padding:'9px 14px',marginBottom:12,fontSize:12,fontWeight:700,color:'#22c55e'}}>✓ {status}</div>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:14}}>
+          {[['Total Items',total,'#22c55e'],['Plays',(counts.gameday_plays||0)+(counts.practice_plays||0)+(counts.scoreboard_plays||0),'#22c55e'],['Film Notes',counts.film_notes||0,'#06b6d4'],['Players',counts.player_profiles||0,'#F0B429']].map(([l,v,col])=>(
+            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:8,padding:'12px 4px',textAlign:'center'}}>
+              <div style={{fontSize:22,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:3,letterSpacing:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,overflow:'hidden',marginBottom:14}}>
+          <div style={{background:'#0a0a0a',padding:'7px 14px',borderBottom:'0.5px solid #1d3a1d',display:'grid',gridTemplateColumns:'0.3fr 1fr 1.5fr 0.5fr 0.8fr'}}>{['','TYPE','DESCRIPTION','SAVED',''].map(h=><div key={h} style={{fontSize:7,fontWeight:700,color:'#555'}}>{h}</div>)}</div>
+          {keys.map((k,i)=>(
+            <div key={k} style={{display:'grid',gridTemplateColumns:'0.3fr 1fr 1.5fr 0.5fr 0.8fr',padding:'9px 14px',background:i%2===0?'#0f0f0f':'#141414',borderBottom:'0.5px solid #1a1a1a',alignItems:'center'}}>
+              <div style={{fontSize:14}}>{icons[k]}</div>
+              <div style={{fontSize:9,fontWeight:700,color:'#F0B429'}}>{labels[k]}</div>
+              <div style={{fontSize:8,color:'#555'}}>{k.replace(/_/g,' ')}</div>
+              <div style={{fontSize:11,fontWeight:700,color:(counts[k]||0)>0?'#22c55e':'#555'}}>{counts[k]||0}{(counts[k]||0)>0?' ✓':''}</div>
+              <button onClick={()=>clearKey(k)} style={{padding:'4px 8px',background:'#1a0404',border:'0.5px solid #dc262644',borderRadius:4,color:'#dc2626',fontSize:8,cursor:'pointer'}}>Clear</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+          <div style={{background:'#0a1a0a',border:'1px solid #22c55e33',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#22c55e',marginBottom:6}}>💾 Auto-Save Active</div>
+            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Every play saves instantly. A green SAVED flash appears in the header every time data is stored. You never have to tap save.</div>
+            <div style={{background:'#14532d',borderRadius:6,padding:'7px',fontSize:9,fontWeight:700,color:'#22c55e',textAlign:'center'}}>✓ ALL DATA SAVING AUTOMATICALLY</div>
+          </div>
+          <div style={{background:'#0a0d1a',border:'1px solid #06b6d433',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:6}}>📤 Export All Plays</div>
+            <div style={{fontSize:12,color:'#ccc',lineHeight:1.7,marginBottom:8}}>Download every logged play as a CSV. Open in Excel or share with college programs that ask for raw data. Works on any device.</div>
+            <button onClick={exportCSV} style={{width:'100%',padding:'10px',background:'#0c1a3a',border:'1px solid #06b6d4',borderRadius:6,color:'#06b6d4',fontWeight:700,fontSize:12,cursor:'pointer'}}>Download westfield_plays.csv</button>
+          </div>
+          <div style={{background:'#1a0404',border:'1px solid #dc262633',borderRadius:8,padding:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#dc2626',marginBottom:6}}>🗑 Clear All Data</div>
+            <div style={{fontSize:12,color:'#9ca3af',lineHeight:1.7,marginBottom:8}}>Wipes everything. Use at the start of a new season. Every play, note, and grade removed permanently.</div>
+            <button onClick={clearAll} style={{width:'100%',padding:'10px',background:'#1a0404',border:'1px solid #dc2626',borderRadius:6,color:'#dc2626',fontWeight:700,fontSize:12,cursor:'pointer'}}>Clear All Data</button>
+          </div>
+        </div>
       </div>
     )
   }
