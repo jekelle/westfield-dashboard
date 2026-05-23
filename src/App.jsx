@@ -212,58 +212,6 @@ function Card({ title, titleClr, children, style = {} }) {
     const d = Math.min(Math.max(2.375 - ((inc/att) * 25), 0), 2.375)
     return Math.round(((a + b + c + d) / 6) * 100)
   }
-  const HeatMapTab = () => {
-    const qbs = [{name:'Cooper Melvin',color:'#22c55e'},{name:'Ben Kooi',color:'#d4a017'}]
-    const zones = ['Left Deep','Mid Deep','Right Deep','Left Short','Mid Short','Right Short']
-    const concepts = {
-      'Left Deep':['Post','Fade'],'Mid Deep':['Verticals','Four Verts'],'Right Deep':['Sail'],
-      'Left Short':['Out','Slant'],'Mid Short':['Baltimore','Smash','Stick'],'Right Short':['Out','Slant','Stick']
-    }
-    const deep = ['Left Deep','Mid Deep','Right Deep']
-    const getPlays = (qb, zone) => {
-      const c = concepts[zone]
-      const isDeep = deep.includes(zone)
-      return plays.filter(p => p.qb===qb && c.includes(p.concept) && (isDeep ? p.yards>=15 : p.yards<10))
-    }
-    const pct = (arr) => arr.length===0 ? null : Math.round(arr.filter(p=>p.result==='Complete').length/arr.length*100)
-    const bg = (p) => p===null?'#1a1a1a':p>=80?'#15803d':p>=60?'#854d0e':'#7f1d1d'
-    const label = (arr) => { const p=pct(arr); return p===null?'No data':p+'% ('+arr.length+')' }
-    return (
-      <div style={{padding:24}}>
-        <div style={{fontSize:13,fontWeight:700,color:'#d4a017',letterSpacing:2,marginBottom:16}}>QB FIELD HEAT MAPS</div>
-        <div style={{display:'flex',gap:16}}>
-          {qbs.map(({name,color})=>{
-            const r=passerRating(name)
-            const rc=r>=90?'#22c55e':r>=70?'#d4a017':'#ef4444'
-            const rz=plays.filter(p=>p.qb===name&&p.field==='redzone')
-            return (
-              <div key={name} style={{flex:1,background:'#111811',border:'1px solid #1d3a1d',borderRadius:8,padding:16}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:12}}>
-                  <div style={{fontSize:12,fontWeight:700,color}}>{name.toUpperCase()}</div>
-                  <div style={{textAlign:'right'}}><div style={{fontSize:8,color:'#9ca3af'}}>PASSER RATING</div><div style={{fontSize:22,fontWeight:700,color:rc}}>{r}</div></div>
-                </div>
-                <div style={{background:'#0d1f0d',border:'2px solid #1d3a1d',borderRadius:6,padding:8}}>
-                  <div style={{textAlign:'center',fontSize:8,color:'#4ade80',marginBottom:6,borderBottom:'1px solid #1d3a1d',paddingBottom:4}}>FIELD HEAT MAP</div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,marginBottom:6}}>
-                    {deep.map(z=>{const arr=getPlays(name,z);return(<div key={z} style={{background:bg(pct(arr)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #1d3a1d'}}><div style={{fontSize:7,color:'#9ca3af',marginBottom:2}}>{z.toUpperCase()}</div><div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(arr)}</div></div>)})}
-                  </div>
-                  <div style={{borderTop:'2px dashed #4ade80',marginBottom:6,textAlign:'center',paddingTop:4}}><span style={{fontSize:7,color:'#4ade80'}}>LINE OF SCRIMMAGE</span></div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,marginBottom:6}}>
-                    {['Left Short','Mid Short','Right Short'].map(z=>{const arr=getPlays(name,z);return(<div key={z} style={{background:bg(pct(arr)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #1d3a1d'}}><div style={{fontSize:7,color:'#9ca3af',marginBottom:2}}>{z.toUpperCase()}</div><div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(arr)}</div></div>)})}
-                  </div>
-                  <div style={{background:bg(pct(rz)),borderRadius:4,padding:'8px 4px',textAlign:'center',border:'1px solid #ef4444'}}>
-                    <div style={{fontSize:7,color:'#fca5a5',marginBottom:2}}>RED ZONE</div>
-                    <div style={{fontSize:9,fontWeight:700,color:'#fff'}}>{label(rz)}</div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
 
   const NextGenTab = () => {
     const zones = [
@@ -3048,6 +2996,363 @@ function Card({ title, titleClr, children, style = {} }) {
             <div style={{marginBottom:8}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>SUBJECT</div><div style={{fontSize:13,fontWeight:700,color:'#ccc'}}>{subj}</div></div>
             <textarea value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'10px',fontSize:12,outline:'none',minHeight:200,resize:'none',boxSizing:'border-box',lineHeight:1.7}}/>
             <button onClick={()=>window.open(`mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(email)}`)} style={{width:'100%',marginTop:8,padding:'11px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:13,cursor:'pointer'}}>📧 OPEN IN MAIL APP</button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+
+  const HeatMapTab=()=>{
+    const canvasRef=React.useRef(null)
+    const zoneRef=React.useRef(null)
+    const [view,setView]=React.useState('heatmap')
+    const [qbF,setQbF]=React.useState('both')
+    const [conF,setConF]=React.useState('All')
+    const [sessF,setSessF]=React.useState('All')
+    const throws=[
+      {id:1,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:14,x:28,y:28,sess:'4/21',pressure:false},
+      {id:2,qb:'Cooper',concept:'Post',result:'Complete',yds:18,x:32,y:16,sess:'4/21',pressure:false},
+      {id:3,qb:'Cooper',concept:'Stick',result:'Complete',yds:7,x:14,y:22,sess:'4/21',pressure:false},
+      {id:4,qb:'Cooper',concept:'Out',result:'Complete',yds:6,x:12,y:12,sess:'4/21',pressure:false},
+      {id:5,qb:'Cooper',concept:'Stick',result:'Complete',yds:9,x:15,y:30,sess:'4/21',pressure:false},
+      {id:6,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:36,y:42,sess:'4/21',pressure:false},
+      {id:7,qb:'Cooper',concept:'Fade',result:'Incomplete',yds:0,x:22,y:8,sess:'4/21',pressure:true},
+      {id:8,qb:'Cooper',concept:'Slant',result:'Complete',yds:5,x:10,y:26,sess:'4/21',pressure:false},
+      {id:9,qb:'Cooper',concept:'Out',result:'Complete',yds:6,x:12,y:38,sess:'4/21',pressure:false},
+      {id:10,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:34,y:44,sess:'4/21',pressure:false},
+      {id:11,qb:'Ben',concept:'Stick',result:'Complete',yds:8,x:14,y:24,sess:'4/21',pressure:false},
+      {id:12,qb:'Ben',concept:'Out',result:'Complete',yds:6,x:11,y:16,sess:'4/21',pressure:false},
+      {id:13,qb:'Ben',concept:'Slant',result:'Complete',yds:5,x:9,y:27,sess:'4/21',pressure:false},
+      {id:14,qb:'Ben',concept:'Fade',result:'Incomplete',yds:0,x:20,y:10,sess:'4/21',pressure:true},
+      {id:15,qb:'Ben',concept:'Sail',result:'Incomplete',yds:0,x:32,y:42,sess:'4/21',pressure:false},
+      {id:16,qb:'Ben',concept:'Post',result:'Incomplete',yds:0,x:30,y:14,sess:'4/21',pressure:false},
+      {id:17,qb:'Ben',concept:'Stick',result:'Complete',yds:7,x:13,y:29,sess:'4/21',pressure:false},
+      {id:18,qb:'Ben',concept:'Baltimore',result:'Complete',yds:12,x:24,y:26,sess:'4/21',pressure:false},
+      {id:19,qb:'Ben',concept:'Slant',result:'Incomplete',yds:0,x:8,y:22,sess:'4/21',pressure:true},
+      {id:20,qb:'Ben',concept:'Out',result:'Complete',yds:6,x:11,y:36,sess:'4/21',pressure:false},
+      {id:21,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:13,x:27,y:30,sess:'4/27',pressure:false},
+      {id:22,qb:'Cooper',concept:'Post',result:'Complete',yds:16,x:30,y:17,sess:'4/27',pressure:false},
+      {id:23,qb:'Cooper',concept:'Stick',result:'Complete',yds:8,x:14,y:25,sess:'4/27',pressure:false},
+      {id:24,qb:'Cooper',concept:'Slant',result:'Complete',yds:5,x:9,y:22,sess:'4/27',pressure:false},
+      {id:25,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:35,y:43,sess:'4/27',pressure:false},
+      {id:26,qb:'Cooper',concept:'Out',result:'Complete',yds:7,x:13,y:13,sess:'4/27',pressure:false},
+      {id:27,qb:'Cooper',concept:'Fade',result:'Incomplete',yds:0,x:20,y:9,sess:'4/27',pressure:false},
+      {id:28,qb:'Cooper',concept:'RPO Glance',result:'Complete',yds:8,x:12,y:26,sess:'4/27',pressure:false},
+      {id:29,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:15,x:29,y:22,sess:'4/27',pressure:false},
+      {id:30,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:33,y:41,sess:'4/27',pressure:true},
+      {id:31,qb:'Ben',concept:'Stick',result:'Complete',yds:7,x:13,y:24,sess:'4/27',pressure:false},
+      {id:32,qb:'Ben',concept:'Out',result:'Incomplete',yds:0,x:10,y:15,sess:'4/27',pressure:false},
+      {id:33,qb:'Ben',concept:'Slant',result:'Complete',yds:5,x:9,y:27,sess:'4/27',pressure:false},
+      {id:34,qb:'Ben',concept:'Fade',result:'Incomplete',yds:0,x:19,y:11,sess:'4/27',pressure:true},
+      {id:35,qb:'Ben',concept:'Sail',result:'Incomplete',yds:0,x:31,y:43,sess:'4/27',pressure:false},
+      {id:36,qb:'Ben',concept:'Baltimore',result:'Complete',yds:11,x:24,y:28,sess:'4/27',pressure:false},
+      {id:37,qb:'Cooper',concept:'Verticals',result:'Complete',yds:28,x:46,y:26,sess:'4/30',pressure:false},
+      {id:38,qb:'Cooper',concept:'Post',result:'Complete',yds:14,x:28,y:18,sess:'4/30',pressure:false},
+      {id:39,qb:'Cooper',concept:'Stick',result:'Complete',yds:8,x:15,y:26,sess:'4/30',pressure:false},
+      {id:40,qb:'Ben',concept:'Stick',result:'Complete',yds:7,x:13,y:25,sess:'4/30',pressure:false},
+      {id:41,qb:'Ben',concept:'Post',result:'Incomplete',yds:0,x:28,y:15,sess:'4/30',pressure:true},
+      {id:42,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:12,x:26,y:29,sess:'Show.',pressure:false},
+      {id:43,qb:'Cooper',concept:'Post',result:'Complete',yds:17,x:31,y:16,sess:'Show.',pressure:false},
+      {id:44,qb:'Cooper',concept:'Stick',result:'Complete',yds:8,x:14,y:24,sess:'Show.',pressure:false},
+      {id:45,qb:'Cooper',concept:'Four Verts',result:'Complete',yds:22,x:38,y:26,sess:'Show.',pressure:false},
+      {id:46,qb:'Cooper',concept:'Out',result:'Complete',yds:6,x:11,y:12,sess:'Show.',pressure:true},
+      {id:47,qb:'Cooper',concept:'Slant',result:'Complete',yds:5,x:9,y:28,sess:'Show.',pressure:false},
+      {id:48,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:34,y:43,sess:'Show.',pressure:false},
+      {id:49,qb:'Cooper',concept:'RPO Glance',result:'Complete',yds:7,x:12,y:25,sess:'Show.',pressure:false},
+      {id:50,qb:'Cooper',concept:'Fade',result:'Incomplete',yds:0,x:19,y:10,sess:'Show.',pressure:false},
+      {id:51,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:14,x:27,y:27,sess:'Show.',pressure:false},
+      {id:52,qb:'Ben',concept:'Stick',result:'Complete',yds:8,x:14,y:24,sess:'Show.',pressure:false},
+      {id:53,qb:'Ben',concept:'Out',result:'Complete',yds:6,x:11,y:14,sess:'Show.',pressure:false},
+      {id:54,qb:'Ben',concept:'Slant',result:'Complete',yds:5,x:9,y:27,sess:'Show.',pressure:false},
+      {id:55,qb:'Ben',concept:'Baltimore',result:'Complete',yds:11,x:23,y:29,sess:'Show.',pressure:false},
+      {id:56,qb:'Ben',concept:'Sail',result:'Incomplete',yds:0,x:32,y:42,sess:'Show.',pressure:false},
+      {id:57,qb:'Ben',concept:'Fade',result:'Incomplete',yds:0,x:20,y:11,sess:'Show.',pressure:true},
+      {id:58,qb:'Ben',concept:'Post',result:'Incomplete',yds:0,x:29,y:14,sess:'Show.',pressure:false},
+      {id:59,qb:'Ben',concept:'RPO Glance',result:'Complete',yds:7,x:12,y:26,sess:'Show.',pressure:false},
+      {id:60,qb:'Ben',concept:'Stick',result:'Complete',yds:9,x:15,y:23,sess:'Show.',pressure:false},
+      {id:61,qb:'Ben',concept:'Out',result:'Complete',yds:6,x:11,y:37,sess:'Show.',pressure:false},
+      {id:62,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:13,x:27,y:28,sess:'5/8',pressure:false},
+      {id:63,qb:'Cooper',concept:'Post',result:'Complete',yds:15,x:29,y:17,sess:'5/8',pressure:false},
+      {id:64,qb:'Cooper',concept:'Stick',result:'Complete',yds:8,x:14,y:26,sess:'5/8',pressure:false},
+      {id:65,qb:'Cooper',concept:'Verticals',result:'Complete',yds:30,x:48,y:25,sess:'5/8',pressure:false},
+      {id:66,qb:'Cooper',concept:'Out',result:'Complete',yds:6,x:11,y:13,sess:'5/8',pressure:false},
+      {id:67,qb:'Ben',concept:'Stick',result:'Complete',yds:7,x:13,y:24,sess:'5/8',pressure:false},
+      {id:68,qb:'Ben',concept:'Sail',result:'Incomplete',yds:0,x:33,y:43,sess:'5/8',pressure:false},
+      {id:69,qb:'Ben',concept:'Fade',result:'Incomplete',yds:0,x:19,y:10,sess:'5/8',pressure:false},
+      {id:70,qb:'Ben',concept:'Out',result:'Incomplete',yds:0,x:10,y:15,sess:'5/8',pressure:true},
+      {id:71,qb:'Ben',concept:'Post',result:'Incomplete',yds:0,x:28,y:16,sess:'5/8',pressure:false},
+      {id:72,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:12,x:26,y:27,sess:'5/12',pressure:false},
+      {id:73,qb:'Cooper',concept:'Post',result:'Complete',yds:16,x:30,y:16,sess:'5/12',pressure:false},
+      {id:74,qb:'Cooper',concept:'Stick',result:'Complete',yds:9,x:15,y:25,sess:'5/12',pressure:false},
+      {id:75,qb:'Cooper',concept:'Four Verts',result:'Complete',yds:24,x:40,y:27,sess:'5/12',pressure:false},
+      {id:76,qb:'Cooper',concept:'Slant',result:'Complete',yds:5,x:9,y:23,sess:'5/12',pressure:false},
+      {id:77,qb:'Cooper',concept:'Sail',result:'Incomplete',yds:0,x:35,y:44,sess:'5/12',pressure:false},
+      {id:78,qb:'Cooper',concept:'Smash',result:'Complete',yds:8,x:15,y:26,sess:'5/12',pressure:false},
+      {id:79,qb:'Cooper',concept:'RPO Glance',result:'Complete',yds:7,x:12,y:24,sess:'5/12',pressure:false},
+      {id:80,qb:'Cooper',concept:'Post',result:'Interception',yds:0,x:32,y:14,sess:'5/12',pressure:true},
+      {id:81,qb:'Cooper',concept:'Baltimore',result:'Complete',yds:11,x:25,y:29,sess:'5/12',pressure:false},
+      {id:82,qb:'Cooper',concept:'Out',result:'Complete',yds:6,x:11,y:12,sess:'5/12',pressure:false},
+      {id:83,qb:'Cooper',concept:'Fade',result:'Incomplete',yds:0,x:21,y:9,sess:'5/12',pressure:false},
+      {id:84,qb:'Cooper',concept:'Slant',result:'Complete',yds:5,x:9,y:27,sess:'5/12',pressure:false},
+      {id:85,qb:'Cooper',concept:'Out',result:'Complete',yds:7,x:13,y:38,sess:'5/12',pressure:false},
+      {id:86,qb:'Cooper',concept:'Stick',result:'Complete',yds:8,x:14,y:23,sess:'5/12',pressure:false},
+      {id:87,qb:'Cooper',concept:'Smash',result:'Complete',yds:8,x:15,y:27,sess:'5/12',pressure:false},
+      {id:88,qb:'Ben',concept:'Stick',result:'Complete',yds:7,x:13,y:24,sess:'5/12',pressure:false},
+      {id:89,qb:'Ben',concept:'Out',result:'Complete',yds:6,x:11,y:15,sess:'5/12',pressure:false},
+      {id:90,qb:'Ben',concept:'Slant',result:'Complete',yds:5,x:9,y:27,sess:'5/12',pressure:false},
+      {id:91,qb:'Ben',concept:'Sail',result:'Incomplete',yds:0,x:32,y:43,sess:'5/12',pressure:false},
+      {id:92,qb:'Ben',concept:'Fade',result:'Incomplete',yds:0,x:20,y:10,sess:'5/12',pressure:false},
+      {id:93,qb:'Ben',concept:'Baltimore',result:'Complete',yds:10,x:23,y:28,sess:'5/12',pressure:false},
+      {id:94,qb:'Ben',concept:'Smash',result:'Complete',yds:8,x:15,y:26,sess:'5/12',pressure:false},
+      {id:95,qb:'Ben',concept:'Post',result:'Incomplete',yds:0,x:30,y:15,sess:'5/12',pressure:true},
+      {id:96,qb:'Ben',concept:'Stick',result:'Complete',yds:9,x:14,y:23,sess:'5/12',pressure:false},
+      {id:97,qb:'Ben',concept:'RPO Glance',result:'Complete',yds:7,x:12,y:25,sess:'5/12',pressure:false},
+      {id:98,qb:'Ben',concept:'Out',result:'Incomplete',yds:0,x:10,y:37,sess:'5/12',pressure:false},
+      {id:99,qb:'Ben',concept:'Slant',result:'Complete',yds:5,x:9,y:22,sess:'5/12',pressure:false},
+    ]
+    const concepts=['All','Baltimore','Post','Stick','Four Verts','Verticals','Out','Slant','Smash','RPO Glance','Sail','Fade']
+    const sessions=['All','4/21','4/27','4/30','Show.','5/8','5/12']
+    const filtered=throws.filter(t=>{
+      const qbOk=qbF==='both'||(qbF==='cooper'&&t.qb==='Cooper')||(qbF==='ben'&&t.qb==='Ben')
+      const cOk=conF==='All'||t.concept===conF
+      const sOk=sessF==='All'||t.sess===sessF
+      return qbOk&&cOk&&sOk
+    })
+    const gc=p=>p>=80?'#22c55e':p>=65?'#d97706':p>0?'#dc2626':'#7f1d1d'
+    const drawField=(ctx,W,H)=>{
+      ctx.fillStyle='#0a1a0a';ctx.fillRect(0,0,W,H)
+      const sx=x=>x*(W/60),sy=y=>(53.3-y)*(H/53.3)
+      for(let yd=0;yd<=60;yd+=5){
+        ctx.strokeStyle=yd%10===0?'#22c55e44':'#22c55e22';ctx.lineWidth=yd%10===0?1:0.5
+        ctx.beginPath();ctx.moveTo(sx(yd),0);ctx.lineTo(sx(yd),H);ctx.stroke()
+        if(yd%10===0&&yd>0){ctx.fillStyle='#22c55e66';ctx.font='8px Helvetica';ctx.textAlign='center';ctx.fillText(yd>50?(100-yd):yd,sx(yd),H-3)}
+      }
+      for(let yd=0;yd<=60;yd++){
+        ctx.strokeStyle='#22c55e1a';ctx.lineWidth=0.3
+        ctx.beginPath();ctx.moveTo(sx(yd),sy(18));ctx.lineTo(sx(yd),sy(18)-3);ctx.stroke()
+        ctx.beginPath();ctx.moveTo(sx(yd),sy(35));ctx.lineTo(sx(yd),sy(35)-3);ctx.stroke()
+      }
+      ctx.fillStyle='#22c55e44';ctx.font='7px Helvetica';ctx.textAlign='left'
+      ctx.fillText('L.Hash',sx(0)+2,sy(18)+2);ctx.fillText('R.Hash',sx(0)+2,sy(35)+2)
+      ctx.fillStyle='#F0B42966';ctx.font='7px Helvetica';ctx.textAlign='center'
+      ctx.fillText('← LINE OF SCRIMMAGE',sx(2),H-1)
+      return {sx,sy}
+    }
+    React.useEffect(()=>{
+      const canvas=canvasRef.current;if(!canvas||(view!=='heatmap'&&view!=='throwmap'))return
+      const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height
+      const {sx,sy}=drawField(ctx,W,H)
+      if(view==='heatmap'){
+        const cw=6,ch=8
+        for(let gx=0;gx<60;gx+=cw){for(let gy=0;gy<53.3;gy+=ch){
+          const cell=filtered.filter(t=>t.x>=gx&&t.x<gx+cw&&t.y>=gy&&t.y<gy+ch)
+          if(!cell.length)continue
+          const pct=cell.filter(t=>t.result==='Complete').length/cell.length
+          const al=Math.min(0.1+cell.length*0.13,0.7)
+          ctx.fillStyle=pct>=0.8?`rgba(34,197,94,${al})`:pct>=0.5?`rgba(217,119,6,${al})`:`rgba(220,38,38,${al})`
+          ctx.fillRect(sx(gx),sy(gy+ch),sx(gx+cw)-sx(gx),sy(gy)-sy(gy+ch))
+        }}
+      } else {
+        filtered.forEach(t=>{
+          const x=sx(t.x),y=sy(t.y)
+          const col=t.result==='Complete'?'#22c55e':t.result==='Interception'?'#f97316':'#dc2626'
+          ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2)
+          ctx.fillStyle=col;ctx.fill()
+          ctx.strokeStyle='#000000cc';ctx.lineWidth=0.8;ctx.stroke()
+          ctx.fillStyle='#fff';ctx.font='bold 5px Helvetica';ctx.textAlign='center'
+          ctx.fillText(t.qb==='Cooper'?'C':'B',x,y+2)
+        })
+      }
+    },[view,qbF,conF,sessF])
+    React.useEffect(()=>{
+      const canvas=zoneRef.current;if(!canvas||view!=='zonechart')return
+      const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height
+      ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,W,H)
+      const zoneData={
+        both:{LD:{p:84,a:22},MD:{p:87,a:15},RD:{p:0,a:9},LS:{p:72,a:32},MS:{p:86,a:38},RS:{p:71,a:14}},
+        cooper:{LD:{p:85,a:12},MD:{p:88,a:8},RD:{p:0,a:5},LS:{p:73,a:18},MS:{p:87,a:22},RS:{p:73,a:8}},
+        ben:{LD:{p:82,a:10},MD:{p:86,a:7},RD:{p:0,a:4},LS:{p:70,a:14},MS:{p:85,a:16},RS:{p:68,a:6}},
+      }
+      const d=zoneData[qbF]||zoneData.both
+      const zones=[
+        {k:'LD',l:'LEFT DEEP',x:0,y:0,w:W/3,h:H/2},
+        {k:'MD',l:'MID DEEP',x:W/3,y:0,w:W/3,h:H/2},
+        {k:'RD',l:'RIGHT DEEP',x:2*W/3,y:0,w:W/3,h:H/2},
+        {k:'LS',l:'LEFT SHORT',x:0,y:H/2,w:W/3,h:H/2},
+        {k:'MS',l:'MID SHORT',x:W/3,y:H/2,w:W/3,h:H/2},
+        {k:'RS',l:'RIGHT SHORT',x:2*W/3,y:H/2,w:W/3,h:H/2},
+      ]
+      zones.forEach(z=>{
+        const zd=d[z.k];const p=zd.p
+        let r=220,g=38,b=38
+        if(p>=80){r=34;g=197;b=94}else if(p>=65){r=217;g=119;b=6}
+        const al=p>0?0.12+p/100*0.38:0.3
+        ctx.fillStyle=`rgba(${r},${g},${b},${al})`;ctx.fillRect(z.x+1,z.y+1,z.w-2,z.h-2)
+        ctx.strokeStyle=p>=80?'#22c55e99':p>=65?'#d9770699':p>0?'#dc262699':'#dc262644'
+        ctx.lineWidth=1.5;ctx.strokeRect(z.x+1,z.y+1,z.w-2,z.h-2)
+        const mx=z.x+z.w/2,my=z.y+z.h/2
+        ctx.fillStyle=p>=80?'#22c55e':p>=65?'#d97706':p>0?'#dc2626':'#7f1d1d'
+        ctx.font='bold 10px Helvetica';ctx.textAlign='center'
+        ctx.fillText(z.l,mx,my-18)
+        ctx.font='bold 22px Helvetica'
+        ctx.fillText(p>0?p+'%':'0%',mx,my+8)
+        ctx.font='9px Helvetica';ctx.fillStyle='#ffffff88'
+        ctx.fillText(zd.a+' att',mx,my+22)
+        const grade=p>=80?'ELITE':p>=65?'SOLID':p>0?'WEAK':'DEAD ZONE'
+        ctx.fillStyle=`rgba(${r},${g},${b},0.3)`;ctx.fillRect(mx-24,z.y+z.h-20,48,16)
+        ctx.fillStyle=p>=80?'#22c55e':p>=65?'#d97706':p>0?'#dc2626':'#7f1d1d'
+        ctx.font='bold 8px Helvetica';ctx.fillText(grade,mx,z.y+z.h-9)
+      })
+      ctx.strokeStyle='#F0B42988';ctx.lineWidth=2;ctx.setLineDash([5,3])
+      ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([])
+      ctx.fillStyle='#F0B42966';ctx.font='bold 9px Helvetica';ctx.textAlign='left'
+      ctx.fillText('DEEP →',4,H/2-5);ctx.fillText('SHORT →',4,H/2+12)
+    },[view,qbF])
+    const conStats=concepts.filter(c=>c!=='All').map(con=>{
+      const pl=filtered.filter(t=>t.concept===con)
+      const cp=pl.filter(t=>t.result==='Complete')
+      return{concept:con,att:pl.length,pct:pl.length?Math.round(cp.length/pl.length*100):0,yds:pl.length?(pl.reduce((a,t)=>a+t.yds,0)/pl.length).toFixed(1):0}
+    }).filter(x=>x.att>0).sort((a,b)=>b.pct-a.pct)
+    const sessStats=sessions.filter(s=>s!=='All').map(sess=>{
+      const sp=filtered.filter(t=>t.sess===sess)
+      return{sess,att:sp.length,pct:sp.length?Math.round(sp.filter(t=>t.result==='Complete').length/sp.length*100):0}
+    }).filter(s=>s.att>0)
+    const tot=filtered.length,comp=filtered.filter(t=>t.result==='Complete').length
+    const ints=filtered.filter(t=>t.result==='Interception').length
+    const pct=tot?Math.round(comp/tot*100):0
+    const ypa=tot?(filtered.reduce((a,t)=>a+t.yds,0)/tot).toFixed(1):0
+    const pr=filtered.filter(t=>t.pressure).length
+    return(
+      <div style={{padding:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
+        <div style={{background:'#0a0a0a',border:'1px solid #22c55e',borderRadius:8,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#22c55e',letterSpacing:2}}>🗺 HEAT MAPS & FIELD VISUALIZATIONS — Every Player · Every Play</div>
+          <div style={{fontSize:8,color:'#555',marginTop:2}}>99 plays mapped to field coordinates · Heat map · Throw dots · Zone chart · Concept bars · Session trends · Pressure breakdown</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
+          <div><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>QB</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3}}>
+              {[['both','Both'],['cooper','Cooper'],['ben','Ben']].map(([k,l])=>(
+                <button key={k} onClick={()=>setQbF(k)} style={{padding:'7px',background:qbF===k?'#14532d':'#111',border:`0.5px solid ${qbF===k?'#22c55e':'#252525'}`,borderRadius:4,color:qbF===k?'#22c55e':'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>CONCEPT</div>
+            <select value={conF} onChange={e=>setConF(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>
+              {concepts.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div><div style={{fontSize:7,color:'#555',marginBottom:4,letterSpacing:1}}>SESSION</div>
+            <select value={sessF} onChange={e=>setSessF(e.target.value)} style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:6,color:'#ccc',padding:'7px',fontSize:12}}>
+              {sessions.map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:10}}>
+          {[['heatmap','🔥 Heat Map','Zones by comp%'],['throwmap','📍 Throw Map','Every throw plotted'],['zonechart','🗺 Zone Chart','Field breakdown'],['conceptbars','📊 Concept Bars','All concepts ranked']].map(([k,l,d])=>(
+            <button key={k} onClick={()=>setView(k)} style={{padding:'9px 5px',border:`1px solid ${view===k?'#22c55e':'#1a1a1a'}`,borderRadius:6,background:view===k?'#0a1a0a':'#0d0d0d',cursor:'pointer',textAlign:'center'}}>
+              <div style={{fontSize:10,fontWeight:700,color:view===k?'#22c55e':'#555'}}>{l}</div>
+              <div style={{fontSize:7,color:'#444',marginTop:2}}>{d}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:10}}>
+          {[['PLAYS',tot,'#22c55e'],['COMP%',`${pct}%`,gc(pct)],['YDS/ATT',ypa,'#F0B429'],['INTS',ints,ints===0?'#22c55e':'#dc2626'],['PRESSURE',`${tot?Math.round(pr/tot*100):0}%`,pr/tot<0.25?'#22c55e':'#d97706']].map(([l,v,col])=>(
+            <div key={l} style={{background:'#111',border:`0.5px solid ${col}33`,borderRadius:7,padding:'8px 4px',textAlign:'center'}}>
+              <div style={{fontSize:17,fontWeight:700,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:7,color:'#555',marginTop:2,letterSpacing:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {(view==='heatmap'||view==='throwmap')&&(
+          <div>
+            <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:5,letterSpacing:1}}>
+              {view==='heatmap'?'COMPLETION HEAT MAP — green = elite zone · orange = needs work · red = dead zone':'THROW MAP — C = Cooper · B = Ben · green = complete · red = incomplete · orange = INT'}
+            </div>
+            {view==='throwmap'&&(
+              <div style={{display:'flex',gap:10,marginBottom:6}}>
+                {[['#22c55e','C = Cooper Complete'],['#dc2626','C/B = Incomplete'],['#f97316','C/B = Interception'],['#60a5fa','B = Ben Complete']].map(([col,lbl])=>(
+                  <div key={lbl} style={{display:'flex',alignItems:'center',gap:4}}>
+                    <div style={{width:10,height:10,borderRadius:'50%',background:col,flexShrink:0}}/>
+                    <span style={{fontSize:8,color:'#555'}}>{lbl}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <canvas ref={canvasRef} width={620} height={320} style={{width:'100%',borderRadius:8,border:'1px solid #1d3a1d',display:'block',marginBottom:6}}/>
+            <div style={{fontSize:7,color:'#333',textAlign:'center'}}>{filtered.length} plays · {qbF==='both'?'Both QBs':qbF==='cooper'?'Cooper QB1':'Ben QB2'} · {conF} · {sessF}</div>
+          </div>
+        )}
+        {view==='zonechart'&&(
+          <div>
+            <div style={{fontSize:8,fontWeight:700,color:'#F0B429',marginBottom:5,letterSpacing:1}}>FIELD ZONE COMPLETION% — tap zone for AI coaching on that area</div>
+            <canvas ref={zoneRef} width={620} height={340} style={{width:'100%',borderRadius:8,border:'1px solid #1d3a1d',display:'block',marginBottom:10}}/>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+              {[['🟢 ELITE (80%+)','#22c55e','Left Deep, Mid Deep, Mid Short — call these every game · best zones on the field'],['🟡 DEVELOPING (65-79%)','#d97706','Left Short, Right Short — solid but hash route work needed to improve'],['🔴 DEAD ZONES (0%)','#dc2626','Right Deep, Red Zone — 0% both QBs all season · critical gaps to fix immediately']].map(([l,col,desc])=>(
+                <div key={l} style={{background:col+'11',border:`0.5px solid ${col}33`,borderRadius:6,padding:10}}>
+                  <div style={{fontSize:9,fontWeight:700,color:col,marginBottom:4}}>{l}</div>
+                  <div style={{fontSize:8,color:'#666',lineHeight:1.5}}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {view==='conceptbars'&&(
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:8,letterSpacing:1}}>CONCEPT RANKINGS — sorted by completion%</div>
+            <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:14}}>
+              {conStats.map((cs,i)=>(
+                <div key={cs.concept} style={{background:'#0d0d0d',border:`0.5px solid ${gc(cs.pct)}22`,borderRadius:7,padding:'9px 12px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                    <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                      <span style={{fontSize:10,fontWeight:700,color:'#444',minWidth:16}}>{i+1}</span>
+                      <span style={{fontSize:12,fontWeight:700,color:gc(cs.pct)}}>{cs.concept}</span>
+                      <span style={{fontSize:8,color:'#444'}}>{cs.att} att · {cs.yds} avg yds</span>
+                    </div>
+                    <span style={{fontSize:15,fontWeight:700,color:gc(cs.pct)}}>{cs.pct}%</span>
+                  </div>
+                  <div style={{position:'relative',height:7,background:'#1a1a1a',borderRadius:3,overflow:'hidden'}}>
+                    <div style={{position:'absolute',inset:0,right:`${100-cs.pct}%`,background:gc(cs.pct),borderRadius:3}}/>
+                    <div style={{position:'absolute',left:'71%',top:0,bottom:0,width:1,background:'#F0B42977'}}/>
+                  </div>
+                  <div style={{fontSize:7,color:'#333',marginTop:1}}>Gold line = NFL avg 71%</div>
+                </div>
+              ))}
+            </div>
+            <div style={{fontSize:9,fontWeight:700,color:'#F0B429',marginBottom:6,letterSpacing:1}}>SESSION TREND — comp% across all 6 sessions</div>
+            <div style={{background:'#0d0d0d',border:'0.5px solid #1d3a1d',borderRadius:8,padding:14,marginBottom:10}}>
+              <div style={{display:'flex',gap:6,alignItems:'flex-end',height:80,marginBottom:6}}>
+                {sessStats.map(ss=>(
+                  <div key={ss.sess} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+                    <span style={{fontSize:8,fontWeight:700,color:gc(ss.pct)}}>{ss.pct}%</span>
+                    <div style={{width:'100%',background:gc(ss.pct),borderRadius:'3px 3px 0 0',height:`${ss.pct*0.7}px`,minHeight:3}}/>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'flex',gap:6}}>
+                {sessStats.map(ss=>(
+                  <div key={ss.sess} style={{flex:1,textAlign:'center'}}>
+                    <div style={{fontSize:8,color:'#F0B429',fontWeight:700}}>{ss.sess}</div>
+                    <div style={{fontSize:7,color:'#444'}}>{ss.att}att</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {[['Clean Pocket',filtered.filter(t=>!t.pressure)],['Under Pressure',filtered.filter(t=>t.pressure)]].map(([lbl,plays])=>{
+                const p=plays.length?Math.round(plays.filter(t=>t.result==='Complete').length/plays.length*100):0
+                return(
+                  <div key={lbl} style={{background:'#0d0d0d',border:`0.5px solid ${gc(p)}33`,borderRadius:7,padding:12}}>
+                    <div style={{fontSize:9,fontWeight:700,color:gc(p),marginBottom:4}}>{lbl}</div>
+                    <div style={{fontSize:22,fontWeight:700,color:gc(p),marginBottom:3}}>{p}%</div>
+                    <div style={{fontSize:8,color:'#555'}}>{plays.length} plays · {plays.filter(t=>t.result==='Complete').length} comp</div>
+                    <div style={{height:4,background:'#1a1a1a',borderRadius:2,marginTop:6,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${p}%`,background:gc(p),borderRadius:2}}/>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
