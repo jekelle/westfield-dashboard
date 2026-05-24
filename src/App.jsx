@@ -1,17 +1,30 @@
 // ============================================================
 // WESTFIELD SHAMROCKS OFFENSIVE ANALYTICS DASHBOARD
-// Copyright © 2026 Jay Kelley. All Rights Reserved.
+// Copyright © 2026 Jay R. Kelley & Westfield Shamrocks Football
+// All Rights Reserved.
 //
-// This software, including all source code, data structures,
-// analytics methodology, AI prompts, and visual design, is the
-// exclusive intellectual property of Jay Kelley.
+// PROTECTED INTELLECTUAL PROPERTY — The following are the
+// exclusive property of Jay R. Kelley:
 //
-// Unauthorized copying, modification, distribution, or use of
-// this software in whole or in part, via any medium, is strictly
-// prohibited without the express written permission of Jay Kelley.
+//   1. SOURCE CODE — All React components, logic, and structure
+//   2. ANALYTICS METHODOLOGY — Position coach AI system,
+//      per-down AI prompts, load vs performance correlation,
+//      QB grading system, concept efficiency framework
+//   3. VISUAL DESIGN — Layout, color system, dashboard UI,
+//      heat maps, zone charts, and all visual components
+//   4. DATA STRUCTURES — Play logging system, session tracking,
+//      recruiting pipeline, and persistent storage architecture
 //
-// Built May 2026 — Westfield, Indiana
-// Contact: jekelle (GitHub) — westfield-dashboard.vercel.app
+// Unauthorized copying, reproduction, modification, distribution,
+// sublicensing, or use of any part of this software — in whole
+// or in part, by any means — is strictly prohibited without the
+// express written permission of Jay R. Kelley.
+//
+// Created & Built: May 2026 — Westfield, Indiana
+// Author: Jay R. Kelley
+// Program: Westfield Shamrocks Football
+// Live: westfield-dashboard.vercel.app
+// Repository: github.com/jekelle/westfield-dashboard (Private)
 // ============================================================
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
