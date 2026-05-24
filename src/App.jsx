@@ -182,7 +182,7 @@ function parseCSV(text) {
     const field = row.field.toLowerCase()
     if (!['normal','redzone'].includes(field)) throw new Error(`Row ${i + 2}: field "${row.field}" must be "normal" or "redzone"`)
     return {
-      qb:      row.qb || 'Aiden Grabowski',
+      qb:      row.qb || 'Cooper Melvin',
       concept: row.concept || 'Stick',
       result:  matchedResult,
       yards:   parseInt(row.yards) || 0,
@@ -4279,6 +4279,30 @@ function Card({ title, titleClr, children, style = {} }) {
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
       {children}
     </div>
+{searchOpen&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:1000,display:'flex',flexDirection:'column',alignItems:'center',paddingTop:60,paddingLeft:16,paddingRight:16}} onClick={()=>{setSearchOpen(false);setSearchQ('')}}>
+          <div style={{width:'100%',maxWidth:540}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',gap:8,marginBottom:12}}>
+              <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder='Search tabs, concepts, players...' style={{flex:1,background:'#111',border:'2px solid #22c55e',borderRadius:10,padding:'14px 18px',color:'#fff',fontSize:16,outline:'none'}}/>
+              <button onClick={()=>{setSearchOpen(false);setSearchQ('')}} style={{padding:'14px 16px',background:'#1a0404',border:'1px solid #ef4444',borderRadius:10,color:'#ef4444',fontWeight:700,fontSize:14,cursor:'pointer'}}>✕</button>
+            </div>
+            {[{l:'Season overview stats and key numbers',t:'Overview'},{l:'Visual charts and trend analysis',t:'Charts'},{l:'All 117 plays logged by concept',t:'Play Calls'},{l:'Cooper Melvin and Ben Kooi profiles',t:'Players'},{l:'Error tracking and correction log',t:'Mistakes'},{l:'AI practice script and drill plan',t:'Next Practice'},{l:'Session replay and play animation',t:'Replays'}].filter(x=>x.l.toLowerCase().includes(searchQ.toLowerCase())).map((r,i)=>(
+              <button key={i} onClick={()=>{setTab(r.t);setSearchOpen(false);setSearchQ('')}} style={{width:'100%',padding:'13px 16px',background:'#0d0d0d',border:'1px solid #1d3a1d',borderRadius:8,cursor:'pointer',textAlign:'left',marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div><div style={{fontSize:10,color:'#22c55e',fontWeight:700,marginBottom:2,letterSpacing:1}}>{r.t.toUpperCase()}</div><div style={{fontSize:13,color:'#ccc'}}>{r.l}</div></div>
+                <div style={{fontSize:11,color:'#555',marginLeft:10}}>→ open</div>
+              </button>
+            ))}
+            {searchQ&&[{l:'Season overview stats and key numbers',t:'Overview'},{l:'Visual charts and trend analysis',t:'Charts'},{l:'All 117 plays logged by concept',t:'Play Calls'},{l:'Cooper Melvin and Ben Kooi profiles',t:'Players'},{l:'Error tracking and correction log',t:'Mistakes'},{l:'AI practice script and drill plan',t:'Next Practice'},{l:'Session replay and play animation',t:'Replays'}].filter(x=>x.l.toLowerCase().includes(searchQ.toLowerCase())).length===0&&<div style={{background:'#111',borderRadius:8,padding:20,textAlign:'center',color:'#555'}}>No results for "{searchQ}"</div>}
+            <div style={{textAlign:'center',marginTop:10,fontSize:11,color:'#555'}}>Click outside or press Esc to close</div>
+          </div>
+        </div>
+      )}
+      {pbAlert&&(
+        <div style={{position:'fixed',top:64,left:'50%',transform:'translateX(-50%)',background:'#0a1a0a',border:'2px solid '+pbAlert.col,borderRadius:10,padding:'12px 20px',zIndex:900,display:'flex',gap:10,alignItems:'center',maxWidth:'90%'}}>
+          <div style={{fontSize:13,fontWeight:700,color:pbAlert.col}}>{'🏆 '+pbAlert.msg}</div>
+          <button onClick={()=>setPbAlert(null)} style={{background:'transparent',border:'none',color:'#555',cursor:'pointer',fontSize:14}}>✕</button>
+        </div>
+      )}
   )
 }
 
@@ -4424,7 +4448,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
   const fileRef = useRef(null)
 
   // Manual entry state
-  const blankRow = { qb:'Aiden Grabowski', concept:'Stick', result:'Complete', yards:'', down:'1', field:'normal', ttt:'', date:'', session:'7on7' }
+  const blankRow = { qb:'Cooper Melvin', concept:'Stick', result:'Complete', yards:'', down:'1', field:'normal', ttt:'', date:'', session:'7on7' }
   const [manual, setManual] = useState([{ ...blankRow }])
 
   const handleFileUpload = e => {
@@ -4452,7 +4476,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
         parsed = manual.map((row, i) => {
           if (!row.concept) throw new Error(`Row ${i+1}: concept is required`)
           return {
-            qb:      row.qb || 'Aiden Grabowski',
+            qb:      row.qb || 'Cooper Melvin',
             concept: row.concept,
             result:  row.result,
             yards:   parseInt(row.yards) || 0,
@@ -4565,7 +4589,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8, lineHeight: 1.6 }}>
               Paste a JSON array of play objects, or upload a previously exported <strong style={{ color: C.gold }}>westfield-data.json</strong> file.
             </div>
-            <textarea value={jsonText} onChange={e => setJson(e.target.value)} placeholder='[{"qb":"Aiden Grabowski","concept":"Stick","result":"Complete","yards":9,"down":1,"field":"normal","date":"4/27"}]' style={ta}/>
+            <textarea value={jsonText} onChange={e => setJson(e.target.value)} placeholder='[{"qb":"Cooper Melvin","concept":"Stick","result":"Complete","yards":9,"down":1,"field":"normal","date":"4/27"}]' style={ta}/>
           </div>
         )}
 
@@ -4613,17 +4637,32 @@ const TABS = ['Overview','Charts','Play Calls','Replays','Players','Mistakes','N
 
 export default function App() {
   const [tab,         setTab]        = useState('Overview')
+  const [lightMode,    setLightMode]  = useState(false)
+  const [searchOpen,   setSearchOpen] = useState(false)
+  const [searchQ,      setSearchQ]    = useState('')
+  const [undoPlay,     setUndoPlay]   = useState(null)
+  const [pbAlert,      setPbAlert]    = useState(null)
+
   const [fQB,         setFQB]        = useState('All QBs')
   const [fSit,        setFSit]       = useState('All')
   const [fDate,       setFDate]      = useState('All')
   const [fSess,       setFSess]      = useState('All')
   const [plays, setPlays] = useState(() => { try { const s = localStorage.getItem('wf_plays'); return s ? JSON.parse(s) : SEED_PLAYS } catch { return SEED_PLAYS } })
   const [replayIdx,   setReplayIdx]  = useState(0)
-  const [playerQB,    setPlayerQB]   = useState('Aiden Grabowski')
+  const [playerQB,    setPlayerQB]   = useState('Cooper Melvin')
   const [showImport,  setImport]     = useState(false)
 
   // Merge imported plays, assign fresh IDs
   useEffect(() => { try { localStorage.setItem('wf_plays', JSON.stringify(plays)) } catch(e) {} }, [plays])
+  useEffect(() => {
+    const h = e => {
+      if(e.key==='Escape'){setSearchOpen(false);setSearchQ('')}
+      if(e.key==='/'&&!searchOpen&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();setSearchOpen(true)}
+    }
+    window.addEventListener('keydown',h)
+    return()=>window.removeEventListener('keydown',h)
+  }, [searchOpen])
+
 
   const handleImport = useCallback(newRows => {
     setPlays(prev => {
@@ -4727,7 +4766,7 @@ export default function App() {
           </Card>
           <Card style={{ padding:9 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:7 }}>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.gold }}>PLAY #1: {(rows[0]?.concept||'BALTIMORE').toUpperCase()} — {rows[0]?.qb||'Aiden Grabowski'}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.gold }}>PLAY #1: {(rows[0]?.concept||'BALTIMORE').toUpperCase()} — {rows[0]?.qb||'Cooper Melvin'}</span>
               <select style={{ ...selS, fontSize:9 }}><option>All Players</option></select>
             </div>
             <RouteField play={rows[0]||SEED_PLAYS[0]} height={185}/>
@@ -5183,6 +5222,9 @@ export default function App() {
           <button onClick={()=>{const b=new Blob([JSON.stringify({plays,script:PLAY_SCRIPT},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='westfield-data.json';a.click()}} style={{ background:'#1a6b2a', border:'none', color:'white', padding:'5px 12px', borderRadius:4, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
             ↑ Export
           </button>
+          <button onClick={()=>setSearchOpen(!searchOpen)} style={{ background:'#1a3a6a', border:'1px solid #2a5aaa', color:'#7ab3ff', padding:'5px 10px', borderRadius:4, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }} title='Search (/)'>🔍</button>
+          <button onClick={()=>setLightMode(!lightMode)} style={{ background:'#1a3a1a', border:'1px solid #2a8a2a', color:'#6bcf6b', padding:'5px 10px', borderRadius:4, fontSize:13, cursor:'pointer', fontFamily:'inherit' }} title='Toggle light/dark'>{lightMode?'🌙':'☀️'}</button>
+
         </div>
       </div>
 
