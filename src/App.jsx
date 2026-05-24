@@ -1,3 +1,19 @@
+// ============================================================
+// WESTFIELD SHAMROCKS OFFENSIVE ANALYTICS DASHBOARD
+// Copyright © 2026 Jay Kelley. All Rights Reserved.
+//
+// This software, including all source code, data structures,
+// analytics methodology, AI prompts, and visual design, is the
+// exclusive intellectual property of Jay Kelley.
+//
+// Unauthorized copying, modification, distribution, or use of
+// this software in whole or in part, via any medium, is strictly
+// prohibited without the express written permission of Jay Kelley.
+//
+// Built May 2026 — Westfield, Indiana
+// Contact: jekelle (GitHub) — westfield-dashboard.vercel.app
+// ============================================================
+
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   LineChart, Line, BarChart, Bar, RadarChart, Radar, PolarGrid,
