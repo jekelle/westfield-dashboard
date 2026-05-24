@@ -4307,30 +4307,6 @@ function Card({ title, titleClr, children, style = {} }) {
       {title && <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: titleClr || '#9ca3af', marginBottom: 8 }}>{title}</div>}
       {children}
     </div>
-{searchOpen&&(
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:1000,display:'flex',flexDirection:'column',alignItems:'center',paddingTop:60,paddingLeft:16,paddingRight:16}} onClick={()=>{setSearchOpen(false);setSearchQ('')}}>
-          <div style={{width:'100%',maxWidth:540}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',gap:8,marginBottom:12}}>
-              <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder='Search tabs, concepts, players...' style={{flex:1,background:'#111',border:'2px solid #22c55e',borderRadius:10,padding:'14px 18px',color:'#fff',fontSize:16,outline:'none'}}/>
-              <button onClick={()=>{setSearchOpen(false);setSearchQ('')}} style={{padding:'14px 16px',background:'#1a0404',border:'1px solid #ef4444',borderRadius:10,color:'#ef4444',fontWeight:700,fontSize:14,cursor:'pointer'}}>✕</button>
-            </div>
-            {[{l:'Season overview stats and key numbers',t:'Overview'},{l:'Visual charts and trend analysis',t:'Charts'},{l:'All 117 plays logged by concept',t:'Play Calls'},{l:'Cooper Melvin and Ben Kooi profiles',t:'Players'},{l:'Error tracking and correction log',t:'Mistakes'},{l:'AI practice script and drill plan',t:'Next Practice'},{l:'Session replay and play animation',t:'Replays'}].filter(x=>x.l.toLowerCase().includes(searchQ.toLowerCase())).map((r,i)=>(
-              <button key={i} onClick={()=>{setTab(r.t);setSearchOpen(false);setSearchQ('')}} style={{width:'100%',padding:'13px 16px',background:'#0d0d0d',border:'1px solid #1d3a1d',borderRadius:8,cursor:'pointer',textAlign:'left',marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div><div style={{fontSize:10,color:'#22c55e',fontWeight:700,marginBottom:2,letterSpacing:1}}>{r.t.toUpperCase()}</div><div style={{fontSize:13,color:'#ccc'}}>{r.l}</div></div>
-                <div style={{fontSize:11,color:'#555',marginLeft:10}}>→ open</div>
-              </button>
-            ))}
-            {searchQ&&[{l:'Season overview stats and key numbers',t:'Overview'},{l:'Visual charts and trend analysis',t:'Charts'},{l:'All 117 plays logged by concept',t:'Play Calls'},{l:'Cooper Melvin and Ben Kooi profiles',t:'Players'},{l:'Error tracking and correction log',t:'Mistakes'},{l:'AI practice script and drill plan',t:'Next Practice'},{l:'Session replay and play animation',t:'Replays'}].filter(x=>x.l.toLowerCase().includes(searchQ.toLowerCase())).length===0&&<div style={{background:'#111',borderRadius:8,padding:20,textAlign:'center',color:'#555'}}>No results for "{searchQ}"</div>}
-            <div style={{textAlign:'center',marginTop:10,fontSize:11,color:'#555'}}>Click outside or press Esc to close</div>
-          </div>
-        </div>
-      )}
-      {pbAlert&&(
-        <div style={{position:'fixed',top:64,left:'50%',transform:'translateX(-50%)',background:'#0a1a0a',border:'2px solid '+pbAlert.col,borderRadius:10,padding:'12px 20px',zIndex:900,display:'flex',gap:10,alignItems:'center',maxWidth:'90%'}}>
-          <div style={{fontSize:13,fontWeight:700,color:pbAlert.col}}>{'🏆 '+pbAlert.msg}</div>
-          <button onClick={()=>setPbAlert(null)} style={{background:'transparent',border:'none',color:'#555',cursor:'pointer',fontSize:14}}>✕</button>
-        </div>
-      )}
   )
 }
 
