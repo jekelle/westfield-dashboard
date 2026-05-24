@@ -972,9 +972,8 @@ function Card({ title, titleClr, children, style = {} }) {
                 {['Open','Contested','Covered'].map(s2=>{const col=s2==='Open'?'#22c55e':s2==='Contested'?'#d97706':'#dc2626';return<button key={s2} onClick={()=>setSep(s2)} style={{padding:'7px 2px',background:sep===s2?col+'22':'#111',border:`1px solid ${sep===s2?col:'#252525'}`,borderRadius:4,color:sep===s2?col:'#555',fontSize:9,fontWeight:700,cursor:'pointer'}}>{s2}</button>})}
               </div>
             </div>
-            <button onClick={logPlay} style={{width:'100%',
             <div style={{marginBottom:6}}><div style={{fontSize:7,color:'#555',marginBottom:3}}>VIDEO CLIP (Hudl/YouTube — optional)</div>
-              <input value={clipUrl} onChange={e=>setClipUrl(e.target.value)} placeholder="Paste clip URL..." style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11,outline:'none',boxSizing:'border-box'}}/>
+              <input value={clipUrl} onChange={e=>setClipUrl(e.target.value)} placeholder='Paste clip URL...' style={{width:'100%',background:'#111',border:'0.5px solid #252525',borderRadius:5,color:'#ccc',padding:'6px',fontSize:11,outline:'none',boxSizing:'border-box'}}/>
             </div>
             <button style={{width:'100%',padding:isMobile?'18px':'14px',background:'#14532d',border:'none',borderRadius:8,color:'#22c55e',fontWeight:700,fontSize:isMobile?22:16,cursor:'pointer',marginBottom:8}}>+ LOG PLAY</button>
             {[...plays].reverse().slice(0,5).map((p,i)=>{
