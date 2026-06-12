@@ -33,6 +33,12 @@ import {
   PolarAngleAxis, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend,
 } from 'recharts'
+import * as THREE from 'three'
+
+// AI calls route through our own serverless proxy so the API key stays server-side
+const AI_ENDPOINT = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+  ? 'https://westfield-dashboard.vercel.app/api/claude'
+  : '/api/claude'
 
 // ─── Palette ────────────────────────────────────────────────
 const C = {
@@ -582,7 +588,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
 const NAV = [
   { cat:'COMMAND',     tabs:['Overview','Dashboard','Charts','Research'] },
   { cat:'QUARTERBACKS',tabs:['Players','Player Profiles','Depth Chart','Scout Report'] },
-  { cat:'PLAY ANALYSIS',tabs:['Play Calls','Replays','Mistakes','Next Gen','Tracking','Heat Maps','Route Tree'] },
+  { cat:'PLAY ANALYSIS',tabs:['Play Calls','Replays','Mistakes','Next Gen','Tracking','3D Throws','Heat Maps','Route Tree'] },
   { cat:'GAME DAY',    tabs:['Quick Call','Game Day','Live Board','Game Plan','Opponent Scout','Coach Ref'] },
   { cat:'UNITS',       tabs:['Offense','Defense','Special Teams','Position Coaches'] },
   { cat:'PRACTICE',    tabs:['Next Practice','Practice Script','Practice Logger','Practice Timer','Coaching Points','Catapult'] },
@@ -666,6 +672,182 @@ export default function App() {
 
   // ── OVERVIEW ──────────────────────────────────────────────
   // -- Full module tab suite (relocated into App scope) --
+  const ThrowSim3DTab = () => {
+    const mountRef = React.useRef(null)
+    const [playIdx, setPlayIdx] = React.useState(0)
+    const [cam, setCam] = React.useState('SIDELINE')
+    const [replayKey, setReplayKey] = React.useState(0)
+    const [webglOk, setWebglOk] = React.useState(true)
+    const passPlays = React.useMemo(() => rows.filter(p => p.concept && p.result), [rows])
+    const play = passPlays[Math.min(playIdx, Math.max(passPlays.length-1,0))] || { concept:'Stick', qb:'Cooper Melvin', result:'Complete', yards:6 }
+
+    const ROUTE3D = {
+      Baltimore:{ depth:14, lat:-8,  breakAt:0.55, breakLat:-14 },
+      Post:     { depth:18, lat:6,   breakAt:0.6,  breakLat:-2  },
+      Stick:    { depth:6,  lat:5,   breakAt:0.7,  breakLat:9   },
+      'Four Verts':{ depth:24, lat:-10, breakAt:1, breakLat:-10 },
+      Sail:     { depth:14, lat:12,  breakAt:0.5,  breakLat:18  },
+      Fade:     { depth:16, lat:-16, breakAt:1,    breakLat:-19 },
+      Slant:    { depth:7,  lat:-7,  breakAt:0.4,  breakLat:2   },
+      Out:      { depth:9,  lat:8,   breakAt:0.65, breakLat:16  },
+      Smash:    { depth:7,  lat:10,  breakAt:0.6,  breakLat:14  },
+    }
+
+    React.useEffect(() => {
+      const mount = mountRef.current
+      if (!mount) return
+      const W = mount.clientWidth || 800, H = 460
+      let renderer
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias:true })
+        renderer.setSize(W, H)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2))
+      } catch(e) { setWebglOk(false); return }
+      if (!renderer.getContext || !renderer.getContext()) { setWebglOk(false); try{renderer.dispose()}catch(_){} return }
+      mount.appendChild(renderer.domElement)
+
+      const scene = new THREE.Scene()
+      scene.background = new THREE.Color('#0d1117')
+      scene.fog = new THREE.Fog('#0d1117', 60, 140)
+      const camera = new THREE.PerspectiveCamera(48, W/H, 0.1, 300)
+
+      const r3 = ROUTE3D[play.concept] || ROUTE3D.Stick
+      const depth = Math.max(4, Math.min(34, (Number(play.yards)||r3.depth) > 0 ? Number(play.yards) : r3.depth))
+      const complete = play.result === 'Complete'
+      const lookAt = new THREE.Vector3(0, 0, depth*0.5)
+
+      const field = new THREE.Mesh(new THREE.PlaneGeometry(54, 70), new THREE.MeshLambertMaterial({ color:'#10301c' }))
+      field.rotation.x = -Math.PI/2; field.position.z = 20; scene.add(field)
+      const lineMat = new THREE.MeshBasicMaterial({ color:'#e8ecf2' })
+      for (let z=-10; z<=50; z+=5) {
+        const ln = new THREE.Mesh(new THREE.PlaneGeometry(54, z%10===0?0.35:0.15), lineMat)
+        ln.rotation.x = -Math.PI/2; ln.position.set(0, 0.02, z); scene.add(ln)
+      }
+      const los = new THREE.Mesh(new THREE.PlaneGeometry(54, 0.5), new THREE.MeshBasicMaterial({ color:'#2fbf71' }))
+      los.rotation.x = -Math.PI/2; los.position.set(0, 0.03, 0); scene.add(los)
+      for (let z=-10; z<=50; z+=1) for (const hx of [-3.1, 3.1]) {
+        const h = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.12), lineMat)
+        h.rotation.x = -Math.PI/2; h.position.set(hx, 0.02, z); scene.add(h)
+      }
+
+      scene.add(new THREE.AmbientLight('#9aa5b5', 0.9))
+      const sun = new THREE.DirectionalLight('#ffffff', 1.1); sun.position.set(-20, 35, 10); scene.add(sun)
+
+      const mkPlayer = (color, h=1.9) => {
+        const g = new THREE.Group()
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, h, 14), new THREE.MeshLambertMaterial({ color }))
+        body.position.y = h/2; g.add(body)
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12), new THREE.MeshLambertMaterial({ color }))
+        head.position.y = h + 0.35; g.add(head)
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.05, 24), new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.55 }))
+        ring.rotation.x = -Math.PI/2; ring.position.y = 0.04; g.add(ring)
+        return g
+      }
+      const qb = mkPlayer('#2fbf71'); qb.position.set(0, 0, -4); scene.add(qb)
+      const wr = mkPlayer('#e3b341'); wr.position.set(r3.lat, 0, 0.3); scene.add(wr)
+      const cb = mkPlayer('#e5534b'); cb.position.set(r3.lat*1.05, 0, 5); scene.add(cb)
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), new THREE.MeshLambertMaterial({ color:'#8a5a2b' }))
+      ball.position.set(0.6, 1.9, -3.6); scene.add(ball)
+
+      const trailPts = []
+      const trailGeo = new THREE.BufferGeometry()
+      const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color:'#e3b341', transparent:true, opacity:0.8 }))
+      scene.add(trail)
+
+      const catchPt = new THREE.Vector3(r3.breakLat, 1.4, depth)
+      const wrPath = t => {
+        const brk = r3.breakAt
+        if (t < brk) {
+          const k = t/brk
+          return new THREE.Vector3(r3.lat, 0, 0.3 + (depth*0.78)*k)
+        }
+        const k = (t-brk)/Math.max(1-brk, 0.001)
+        return new THREE.Vector3(r3.lat + (r3.breakLat-r3.lat)*k, 0, 0.3 + depth*0.78 + (depth*0.22-0.3)*k)
+      }
+
+      const camPos = {
+        SIDELINE: new THREE.Vector3(-30, 13, depth*0.45),
+        'END ZONE': new THREE.Vector3(0, 7, -16),
+        SKYCAM: new THREE.Vector3(4, 30, depth*0.35),
+      }
+      let sph = new THREE.Spherical().setFromVector3((camPos[cam]||camPos.SIDELINE).clone().sub(lookAt))
+      let dragging=false, px=0, py=0
+      const dom = renderer.domElement
+      const onDown = e => { dragging=true; px=e.clientX; py=e.clientY }
+      const onMove = e => { if(!dragging) return; sph.theta -= (e.clientX-px)*0.006; sph.phi = Math.max(0.15, Math.min(1.45, sph.phi - (e.clientY-py)*0.004)); px=e.clientX; py=e.clientY }
+      const onUp = () => { dragging=false }
+      dom.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
+      dom.style.cursor = 'grab'
+
+      const HOLD=0.18, FLIGHT=0.62
+      let raf, start = performance.now()
+      const animate = () => {
+        raf = requestAnimationFrame(animate)
+        const elapsed = (performance.now()-start)/1000
+        const T = Math.min(elapsed/3.4, 1)
+        const wt = Math.min(T/(HOLD+FLIGHT+0.12), 1)
+        wr.position.copy(wrPath(wt)); wr.position.y = 0
+        const cbT = wrPath(Math.max(wt-0.06, 0)); cb.position.set(cbT.x*1.02+0.6, 0, cbT.z-1.1)
+        if (T > HOLD) {
+          const ft = Math.min((T-HOLD)/FLIGHT, 1)
+          const sx=0.6, sy=1.9, sz=-3.6
+          const ex = complete ? catchPt.x : catchPt.x + 2.4
+          const ez = complete ? catchPt.z : catchPt.z + 3
+          const peak = 2.2 + depth*0.28
+          ball.position.set(sx+(ex-sx)*ft, sy + (complete?catchPt.y-sy:(-sy))*ft + peak*4*ft*(1-ft), sz+(ez-sz)*ft)
+          if (ball.position.y < 0.32) ball.position.y = 0.32
+          trailPts.push(ball.position.clone()); if (trailPts.length>34) trailPts.shift()
+          trailGeo.setFromPoints(trailPts)
+          if (ft >= 1 && complete) { wr.children[2].material.color.set('#2fbf71') }
+          if (ft >= 1 && !complete) { ball.material.color.set('#e5534b') }
+        }
+        const want = camPos[cam] || camPos.SIDELINE
+        if (!dragging) {
+          const target = new THREE.Spherical().setFromVector3(want.clone().sub(lookAt))
+          sph.radius += (target.radius - sph.radius)*0.04
+        }
+        camera.position.setFromSpherical(sph).add(lookAt)
+        camera.lookAt(lookAt)
+        renderer.render(scene, camera)
+      }
+      animate()
+
+      const onResize = () => { const w = mount.clientWidth||W; camera.aspect = w/H; camera.updateProjectionMatrix(); renderer.setSize(w, H) }
+      window.addEventListener('resize', onResize)
+      return () => {
+        cancelAnimationFrame(raf)
+        window.removeEventListener('resize', onResize); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp)
+        dom.removeEventListener('mousedown', onDown)
+        try { mount.removeChild(renderer.domElement) } catch(_){}
+        renderer.dispose()
+        scene.traverse(o => { if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose() })
+      }
+    }, [playIdx, cam, replayKey, passPlays.length])
+
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ display:'flex', gap:7, alignItems:'center', flexWrap:'wrap' }}>
+          <select value={Math.min(playIdx, Math.max(passPlays.length-1,0))} onChange={e=>setPlayIdx(+e.target.value)} style={{ ...selS, flex:1, minWidth:220 }}>
+            {passPlays.map((p,i)=><option key={i} value={i}>#{p.id} — {p.concept} | {p.qb} | {p.result} | {p.yards>0?p.yards+' yds':'0 yds'}</option>)}
+          </select>
+          {['SIDELINE','END ZONE','SKYCAM'].map(c=>
+            <button key={c} onClick={()=>setCam(c)} style={{ padding:'6px 12px', borderRadius:6, cursor:'pointer', fontWeight:700, fontSize:10, letterSpacing:1,
+              background: cam===c ? '#15402c' : '#141a23', color: cam===c ? '#2fbf71' : '#8b949e', border: `1px solid ${cam===c?'#2fbf71':'#27313f'}` }}>{c}</button>)}
+          <button onClick={()=>setReplayKey(k=>k+1)} style={{ padding:'6px 14px', borderRadius:6, cursor:'pointer', fontWeight:700, fontSize:10, letterSpacing:1, background:'#1d2a3a', color:'#e3b341', border:'1px solid #e3b341' }}>REPLAY</button>
+        </div>
+        <div style={{ background:'#10151d', border:`1px solid ${C.border}`, borderRadius:7, padding:'8px 14px', display:'flex', gap:18, flexWrap:'wrap', fontSize:11 }}>
+          {[['CONCEPT', play.concept, C.gold],['QB', play.qb, C.green],['RESULT', play.result, play.result==='Complete'?C.green:'#e5534b'],['YARDS', String(play.yards||0), C.text],['VIEW','Drag to orbit - buttons for broadcast angles','#8b949e']].map(([l,v,c])=>
+            <div key={l}><div style={{ fontSize:8, color:'#8b949e', letterSpacing:1.5 }}>{l}</div><div style={{ fontWeight:700, color:c }}>{v}</div></div>)}
+        </div>
+        {webglOk
+          ? <div ref={mountRef} style={{ width:'100%', borderRadius:8, overflow:'hidden', border:`1px solid ${C.border}`, minHeight:460, background:'#0d1117' }}/>
+          : <div style={{ padding:30, color:'#8b949e', border:`1px solid ${C.border}`, borderRadius:8 }}>3D rendering unavailable in this browser. The throw simulator requires WebGL.</div>}
+        <div style={{ fontSize:9.5, color:'#69758a' }}>Ball flight simulated from logged play data: concept route geometry, actual yardage, and completion result. Physics: parabolic arc scaled to throw depth.</div>
+      </div>
+    )
+  }
+
+
 
   const passerRating = (qbName) => {
     const qbPlays = plays.filter(p => p.qb === qbName)
@@ -1091,7 +1273,7 @@ export default function App() {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:'You are an elite football analytics AI for Westfield Shamrocks. Be specific and data-driven. Season data: 117 plays. Cooper Melvin QB1: 63 att 50 comp 84% 658yds 13.2ypa RTG87 Grade A. Ben Kooi QB2: 54 att 38 comp 70% 310yds 6.5ypa RTG71 Grade B. Concepts: Baltimore 100% 12.4avg ELITE EPA+1.8, Post 100% 13.1avg ELITE EPA+1.4, Stick 100% 7.7avg ELITE EPA+0.8, Four Verts 100% 22avg ELITE EPA+1.9, Verticals 88% 28.5avg ELITE EPA+2.1, Out 100% SOLID, Slant 90% SOLID, Smash 100% BUILD, RPO Glance 100% BUILD, Sail 0% CUT EPA-0.6, Fade 0% CUT EPA-0.8. Red Zone 0% both QBs critical gap. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Ben TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. ',messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:'You are an elite football analytics AI for Westfield Shamrocks. Be specific and data-driven. Season data: 117 plays. Cooper Melvin QB1: 63 att 50 comp 84% 658yds 13.2ypa RTG87 Grade A. Ben Kooi QB2: 54 att 38 comp 70% 310yds 6.5ypa RTG71 Grade B. Concepts: Baltimore 100% 12.4avg ELITE EPA+1.8, Post 100% 13.1avg ELITE EPA+1.4, Stick 100% 7.7avg ELITE EPA+0.8, Four Verts 100% 22avg ELITE EPA+1.9, Verticals 88% 28.5avg ELITE EPA+2.1, Out 100% SOLID, Slant 90% SOLID, Smash 100% BUILD, RPO Glance 100% BUILD, Sail 0% CUT EPA-0.6, Fade 0% CUT EPA-0.8. Red Zone 0% both QBs critical gap. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Ben TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. ',messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();const reply=d.content?.[0]?.text||'Error'
         setMsgs(p=>[...p,{role:'assistant',content:reply}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'API connection error.'}])}
@@ -1223,7 +1405,7 @@ export default function App() {
       setLoad(true);setPlan('')
       const prompt=`Generate a game plan for Westfield Shamrocks for a ${gt} game${opp?' vs '+opp:''}. Focus: ${foc}.\n\nFormat exactly:\n**OPENING SCRIPT (First 5 Plays)**\nList 5 specific plays with reasoning\n\n**TOP CONCEPTS TO CALL**\nTop 4 concepts with stats\n\n**HASH STRATEGY**\nLeft/Middle/Right approach\n\n**AVOID COMPLETELY**\nWhat to cut and why\n\n**SITUATIONAL CALLS**\n3rd down, red zone, 2-minute\n\n**COOPER SPOTLIGHT**\n2-3 plays for college scouts\n\n**BEN KOOI PACKAGE**\n2-3 plays for Ben\n\nReference actual stats. Be specific.`
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:`You are an elite offensive coordinator for Westfield Shamrocks. Season data: 117 plays. Cooper QB1: 84% 658yds 13.2ypa RTG87 Grade A. Ben QB2: 70% 310yds 6.5ypa RTG71 Grade B. Best plays: Baltimore 100% EPA+1.8, Post 100% EPA+1.4, Verticals 88% EPA+2.1, Stick 100% EPA+0.8, Four Verts 100% EPA+1.9. Cut: Sail 0% EPA-0.6, Fade 0% EPA-0.8. Red Zone 0% both QBs. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88%. Ben TTT 1.9s airYards 6.5 CPOE-3%.`,messages:[{role:'user',content:prompt}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:`You are an elite offensive coordinator for Westfield Shamrocks. Season data: 117 plays. Cooper QB1: 84% 658yds 13.2ypa RTG87 Grade A. Ben QB2: 70% 310yds 6.5ypa RTG71 Grade B. Best plays: Baltimore 100% EPA+1.8, Post 100% EPA+1.4, Verticals 88% EPA+2.1, Stick 100% EPA+0.8, Four Verts 100% EPA+1.9. Cut: Sail 0% EPA-0.6, Fade 0% EPA-0.8. Red Zone 0% both QBs. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88%. Ben TTT 1.9s airYards 6.5 CPOE-3%.`,messages:[{role:'user',content:prompt}]})})
         const d=await r.json();setPlan(d.content?.[0]?.text||'Error')
       }catch(e){setPlan('Connection error.')}
       setLoad(false)
@@ -1358,7 +1540,7 @@ export default function App() {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Strong arm + mobile QB profile. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Strong arm + mobile QB profile. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -1505,7 +1687,7 @@ export default function App() {
       const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:220,system:OC_CTX,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:220,system:OC_CTX,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -1646,7 +1828,7 @@ export default function App() {
       const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:220,system:DC_CTX,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:220,system:DC_CTX,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -1775,7 +1957,7 @@ export default function App() {
       const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:ST,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:ST,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -1858,7 +2040,7 @@ export default function App() {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:DC2,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:DC2,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -2009,7 +2191,7 @@ export default function App() {
         halftime:'Write a quick halftime adjustment memo for coaching staff. What is working (keep calling), what is not (stop calling), and one key adjustment per unit. Short and direct — 2 minutes to read.'
       }
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:550,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails for coaching staff based on real season data.',messages:[{role:'user',content:ps[type]}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:550,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails for coaching staff based on real season data.',messages:[{role:'user',content:ps[type]}]})})
         const d=await r.json()
         const text=d.content?.[0]?.text||'Error'
         const lines=text.split('\n')
@@ -2150,7 +2332,7 @@ export default function App() {
       setLoad(true);setAiReport('')
       const statsStr=Object.entries(sel.stats||{}).map(([k,v])=>`${k}: ${v}`).join(', ')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:380,system:'You are an elite high school football coach writing a personal weekly report. Speak directly to the player using YOU. Be honest, specific, and motivating. Tell them exactly what they did well, what to fix, and give 3 specific drills to do before next practice. Sound like a great coach, not a robot.',messages:[{role:'user',content:`Write a personal weekly report for ${sel.name} (${sel.pos}) at Westfield Shamrocks. Stats: ${statsStr}. Season grade: ${sel.grade}. Strengths: ${sel.pros?.join('. ')}. Needs work: ${sel.cons?.join('. ')}. Next practice priorities: ${sel.next?.join('. ')}. Write directly to them — what they did well this week, one thing to improve, and 3 specific things to do before they step on the field again.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:380,system:'You are an elite high school football coach writing a personal weekly report. Speak directly to the player using YOU. Be honest, specific, and motivating. Tell them exactly what they did well, what to fix, and give 3 specific drills to do before next practice. Sound like a great coach, not a robot.',messages:[{role:'user',content:`Write a personal weekly report for ${sel.name} (${sel.pos}) at Westfield Shamrocks. Stats: ${statsStr}. Season grade: ${sel.grade}. Strengths: ${sel.pros?.join('. ')}. Needs work: ${sel.cons?.join('. ')}. Next practice priorities: ${sel.next?.join('. ')}. Write directly to them — what they did well this week, one thing to improve, and 3 specific things to do before they step on the field again.`}]})})
         const d=await r.json();setAiReport(d.content?.[0]?.text||'Error')
       }catch(e){setAiReport('Connection error.')}
       setLoad(false)
@@ -2273,7 +2455,7 @@ export default function App() {
         ?`Write a formal college football scouting report for Cooper Melvin, QB at Westfield Shamrocks Indiana, Class of 2027. Written from the perspective of a ${style}. Use exact stats throughout. Include these sections with headers:\n\nPLAYER OVERVIEW\nPHYSICAL PROFILE\nSTATISTICAL ANALYSIS\nNFL COMPARISON PROFILE\nSTRENGTHS\nAREAS TO DEVELOP\nDIVISION FIT ASSESSMENT\nRECRUITMENT RECOMMENDATION\n\nData: ${physLine} Season stats: 63att 50comp 84% 658yds 13.2ypa RTG87 Grade A. NFL NextGen: TTT 2.0s (NFL avg 2.36s optimal). airYards 13.2 (NFL avg 8.0 — ABOVE). Deep ball 88% (NFL avg 52% — ELITE). Hash accuracy 73% (NFL 71% avg). CPOE +4% outperforms projected rate. Style match: Strong arm accuracy · Mobile QB profile. Red zone 0% — no package installed yet. Fix hash+redzone+consistency = elite high school level with continued development. Make this sound like a real college program scouting document.`
         :`Write a developmental scouting evaluation for Ben Kooi, QB2 at Westfield Shamrocks Indiana, Class of 2027. Written from the perspective of a ${style}. Include: PLAYER OVERVIEW, CURRENT PROFILE, STATISTICAL ANALYSIS, KEY DEVELOPMENT AREAS, 8-STEP IMPROVEMENT PLAN, PROJECTED CEILING, TIMELINE TO STARTER. Data: ${physLine} 54att 38comp 70% 310yds 6.5ypa RTG71 Grade B. TTT 1.9s (slightly fast). Deep ball 50%. Hash 60%. CPOE -3%. Showcase game 80% comp under pressure with coaches watching — best performance. Fix mechanics+hash+redzone = RTG 96+ QB1 candidate. High upside. Do not give up on him. Make this sound like a real college program evaluation.`
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,system:'You are a professional college football scout writing formal evaluation reports. Use professional scouting language. Reference specific stats and numbers. Make it something a real college coach would read and act on.',messages:[{role:'user',content:prompt}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1400,system:'You are a professional college football scout writing formal evaluation reports. Use professional scouting language. Reference specific stats and numbers. Make it something a real college coach would read and act on.',messages:[{role:'user',content:prompt}]})})
         const d=await r.json(); setReport(d.content?.[0]?.text||'Error')
       }catch(e){setReport('Connection error — check API access.')}
       setLoad(false)
@@ -2394,7 +2576,7 @@ export default function App() {
       if(!notes.length)return;setAiLoad(true);setAiSum('')
       const nt=notes.map(n=>`[${n.sess}] ${n.player} — ${n.tag}: ${n.note}`).join('\n')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'You are an elite football analyst summarizing film review notes into a coaching report. Group by player. Give the top 3 priorities for each player. Then give 3 practice drill recommendations. Be specific and direct. This should read like what an NFL position coach gives his coordinator after film review.',messages:[{role:'user',content:`Analyze these film notes and write a coaching report with top priorities and drill recommendations:\n\n${nt}`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,system:'You are an elite football analyst summarizing film review notes into a coaching report. Group by player. Give the top 3 priorities for each player. Then give 3 practice drill recommendations. Be specific and direct. This should read like what an NFL position coach gives his coordinator after film review.',messages:[{role:'user',content:`Analyze these film notes and write a coaching report with top priorities and drill recommendations:\n\n${nt}`}]})})
         const d=await r.json();setAiSum(d.content?.[0]?.text||'Error')
       }catch(e){setAiSum('Connection error.')}
       setAiLoad(false)
@@ -2851,7 +3033,7 @@ export default function App() {
     const getAiTip=async()=>{
       setTipLoad(true);setAiTip('')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:120,system:'You are an offensive coordinator. Give ONE specific play call tip in 2 sentences max. Be direct and confident. Name the exact play.',messages:[{role:'user',content:`${dn} and ${dist}, ${hash} hash, ${zone}, score ${score}, QB ${qb}. Our data: ${CTX} What is the single best play call right now and why?`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:120,system:'You are an offensive coordinator. Give ONE specific play call tip in 2 sentences max. Be direct and confident. Name the exact play.',messages:[{role:'user',content:`${dn} and ${dist}, ${hash} hash, ${zone}, score ${score}, QB ${qb}. Our data: ${CTX} What is the single best play call right now and why?`}]})})
         const d=await r.json();setAiTip(d.content?.[0]?.text||'')
       }catch(e){setAiTip('Connection error.')}
       setTipLoad(false)
@@ -2860,7 +3042,7 @@ export default function App() {
     const explainPlay=async(play)=>{
       setSelPlay(play.name);setPlayExp('');setExpLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,system:'You are an offensive coordinator. Explain in exactly 2 sentences why to call this play right now, what coverage it beats, and what the QB reads. Be specific.',messages:[{role:'user',content:`Why call ${play.name} on ${dn} and ${dist}, ${hash} hash, ${zone}? Our stats: ${play.comp}% comp ${play.epa} EPA ${play.yds} avg yds. Beats: ${play.beats}.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:100,system:'You are an offensive coordinator. Explain in exactly 2 sentences why to call this play right now, what coverage it beats, and what the QB reads. Be specific.',messages:[{role:'user',content:`Why call ${play.name} on ${dn} and ${dist}, ${hash} hash, ${zone}? Our stats: ${play.comp}% comp ${play.epa} EPA ${play.yds} avg yds. Beats: ${play.beats}.`}]})})
         const d=await r.json();setPlayExp(d.content?.[0]?.text||'')
       }catch(e){setPlayExp('Connection error.')}
       setExpLoad(false)
@@ -3017,7 +3199,7 @@ export default function App() {
       const um={role:'user',content:ctx+msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:OPP_SYS,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:OPP_SYS,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -3128,7 +3310,7 @@ export default function App() {
     const genScript=async()=>{
       setLoad(true);setAiScript('')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:`You are an offensive coordinator building a practice script for Westfield Shamrocks. Season data: ${CTX} Build a ${reps}-rep practice script focused on: ${focus}. QB focus: ${qbFocus}. Format as a numbered list. Each line: [Rep#] CONCEPT — QB — Focus — Goal. Be specific. Target the actual weaknesses in the data.`,messages:[{role:'user',content:`Build a ${reps}-play practice script for ${focus} focus, QB focus ${qbFocus}. Make every rep count.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,system:`You are an offensive coordinator building a practice script for Westfield Shamrocks. Season data: ${CTX} Build a ${reps}-rep practice script focused on: ${focus}. QB focus: ${qbFocus}. Format as a numbered list. Each line: [Rep#] CONCEPT — QB — Focus — Goal. Be specific. Target the actual weaknesses in the data.`,messages:[{role:'user',content:`Build a ${reps}-play practice script for ${focus} focus, QB focus ${qbFocus}. Make every rep count.`}]})})
         const d=await r.json();setAiScript(d.content?.[0]?.text||'Error')
         setScript(baseScript.slice(0,reps))
       }catch(e){setAiScript('Connection error.')}
@@ -3235,7 +3417,7 @@ export default function App() {
       const recent=allPlays.slice(-5)
       const summary=recent.map(p=>`${p.qb==='Cooper Melvin'?'Cooper':'Ben'} ${p.concept} ${p.result} ${p.yds}yds`).join(', ')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,system:'You are a sideline analyst. Give a 1-sentence drive summary and 1-sentence suggestion for the next series. Be direct.',messages:[{role:'user',content:`Last 5 plays: ${summary}. Our data: ${CTX} Quick assessment and next call.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'You are a sideline analyst. Give a 1-sentence drive summary and 1-sentence suggestion for the next series. Be direct.',messages:[{role:'user',content:`Last 5 plays: ${summary}. Our data: ${CTX} Quick assessment and next call.`}]})})
         const d=await r.json();setDriveSummary(d.content?.[0]?.text||'')
       }catch(e){setDriveSummary('')}
       setSumLoad(false)
@@ -3365,7 +3547,7 @@ export default function App() {
       if(!msg.trim()||load)return
       setLoad(true);setAns('');setQ('')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,system:QR_SYS,messages:[{role:'user',content:msg}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:QR_SYS,messages:[{role:'user',content:msg}]})})
         const d=await r.json();setAns(d.content?.[0]?.text||'Error')
       }catch(e){setAns('Connection error.')}
       setLoad(false)
@@ -3469,7 +3651,7 @@ export default function App() {
         parents:'Write a positive parent update email for Westfield Shamrocks families. Highlight team progress, mention Cooper Melvin\'s strong season (84% completion, college showcase ready), mention Ben Kooi\'s improvement trend, explain what the coaching staff is working on, and build excitement for the upcoming season. Upbeat and family-friendly tone. No technical jargon.'
       }
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails. First line is the subject line starting with Subject:',messages:[{role:'user',content:prompts[type]}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,system:'You are the analytics director for Westfield Shamrocks football. Write professional emails. First line is the subject line starting with Subject:',messages:[{role:'user',content:prompts[type]}]})})
         const d=await r.json()
         const text=d.content?.[0]?.text||'Error'
         const lines=text.split('\n')
@@ -4083,11 +4265,11 @@ export default function App() {
       setMsgs(newMsgs)
       setQuestion('')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{
+        const r=await fetch(AI_ENDPOINT,{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
-            model:'claude-sonnet-4-20250514',
+            model:'claude-sonnet-4-6',
             max_tokens:200,
             system:buildSystemPrompt(),
             messages:newMsgs.map(m=>({role:m.role,content:buildUserMsg(m.content)}))
@@ -4375,7 +4557,7 @@ export default function App() {
       const summary=sess.players.map(p=>`${p.name}(${p.pos}): load=${p.load} dist=${p.dist}mi speed=${p.topSpeed}mph sprints=${p.sprints} rpe=${p.rpe}/10`).join('; ')
       const compData="Cooper 5/12=75% 5/8=100%. Ben 5/12=55% 5/8=40%."
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:'You are a sports science analyst for Westfield Shamrocks football. Analyze athlete load data and correlate with QB performance. Give 3 specific insights: who is at risk of fatigue, who had optimal load, and one recommendation for the next practice. Be direct and specific.',messages:[{role:'user',content:`Load data for ${sess.date}: ${summary}. QB performance context: ${compData}. Analyze load vs performance and give coaching recommendations.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:'You are a sports science analyst for Westfield Shamrocks football. Analyze athlete load data and correlate with QB performance. Give 3 specific insights: who is at risk of fatigue, who had optimal load, and one recommendation for the next practice. Be direct and specific.',messages:[{role:'user',content:`Load data for ${sess.date}: ${summary}. QB performance context: ${compData}. Analyze load vs performance and give coaching recommendations.`}]})})
         const d=await r.json()
         setAiInsight(d.content?.[0]?.text||'Error')
       }catch(e){setAiInsight('Connection error.')}
@@ -4640,7 +4822,7 @@ export default function App() {
       setAiLoad(true)
       const summary=points.map(p=>`[${p.coach}] ${p.player}: ${p.repGrade} — ${p.point}`).join('\n')
       try{
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:'You are a football coordinator summarizing coaching point logs from a practice session. Group by player. Give the top 2 teaching priorities for each player. Then give 3 practice drill recommendations for the next session. Be direct.',messages:[{role:'user',content:`Coaching points from today:\n${summary}\nSummarize top priorities and next session drill recommendations.`}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:'You are a football coordinator summarizing coaching point logs from a practice session. Group by player. Give the top 2 teaching priorities for each player. Then give 3 practice drill recommendations for the next session. Be direct.',messages:[{role:'user',content:`Coaching points from today:\n${summary}\nSummarize top priorities and next session drill recommendations.`}]})})
         const d=await r.json();setAiSummary(d.content?.[0]?.text||'Error')
       }catch(e){setAiSummary('Connection error.')}
       setAiLoad(false)
@@ -5346,6 +5528,7 @@ export default function App() {
               {tab==='Scout Report' && <ScoutReportTab/>}
               {tab==='Next Gen' && <NextGenTab/>}
               {tab==='Tracking' && <TrackingTab/>}
+              {tab==='3D Throws' && <ThrowSim3DTab/>}
               {tab==='Heat Maps' && <HeatMapTab/>}
               {tab==='Route Tree' && <RouteTreeTab/>}
               {tab==='Quick Call' && <QuickCallTab/>}
