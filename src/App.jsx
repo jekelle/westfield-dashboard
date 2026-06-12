@@ -1136,7 +1136,7 @@ export default function App() {
         {activeView==='compProb'&&<div>
           <div style={{background:'#07070f',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:12}}>
             <div style={{fontSize:10,fontWeight:700,color:'#06b6d4',marginBottom:3}}>COMPLETION PROBABILITY — Logistic regression model by zone + separation</div>
-            <div style={{fontSize:8,color:'#69758a'}}>Features: air_yards · target_separation · passer_speed · field_zone · time_to_throw · Trained on 117 plays</div>
+            <div style={{fontSize:8,color:'#69758a'}}>Features: air_yards · target_separation · passer_speed · field_zone · time_to_throw · Trained on {plays.length} plays</div>
           </div>
           <div style={{background:'#10151d',border:'1px solid #27313f',borderRadius:8,overflow:'hidden',marginBottom:12}}>
             <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr 1fr 1fr 1fr 1fr',background:'#0d1117',padding:'7px 10px',borderBottom:'1px solid #27313f'}}>
@@ -1216,7 +1216,7 @@ export default function App() {
         {activeView==='voronoi'&&<div>
           <div style={{background:'#0d1117',border:'1px solid #2fbf71',borderRadius:8,padding:12,marginBottom:12}}>
             <div style={{fontSize:10,fontWeight:700,color:'#2fbf71',marginBottom:3}}>VORONOI FIELD CONTROL — Spatial dominance diagram</div>
-            <div style={{fontSize:8,color:'#69758a'}}>Each region = area closest to that player. Green = offense controls. Red = defense pressure. Based on avg player positions from tracking data across all 117 plays.</div>
+            <div style={{fontSize:8,color:'#69758a'}}>Each region = area closest to that player. Green = offense controls. Red = defense pressure. Based on avg player positions from tracking data across all {plays.length} plays.</div>
           </div>
           <svg viewBox="0 0 520 280" style={{width:'100%',border:'1px solid #27313f',borderRadius:8,background:'#11161f',marginBottom:12,display:'block'}}>
             {[0,10,20,30,40,50,60].map(y=><line key={y} x1={y*8.67} y1={0} x2={y*8.67} y2={280} stroke="#22c55e22" strokeWidth={y%20===0?1:0.5}/>)}
@@ -1264,7 +1264,7 @@ export default function App() {
 
 
   const AITab=()=>{
-    const [msgs,setMsgs]=React.useState([{role:'assistant',content:'Hey Coach! I know all 117 plays from this season. Ask me anything about Cooper, Ben, concepts, game planning, or recruiting.'}])
+    const [msgs,setMsgs]=React.useState([{role:'assistant',content:`Hey Coach! I know all ${plays.length} plays from this season. Ask me anything about Cooper, Ben, concepts, game planning, or recruiting.`}])
     const [inp,setInp]=React.useState('');const [load,setLoad]=React.useState(false)
     const ref=React.useRef(null)
     const qs=['What is Cooper best concept on 3rd and medium?','Generate a 5-play opening script','What does Ben need to fix most?','Which concepts should we cut?','How does Cooper compare to D2 QB recruit?']
@@ -1273,7 +1273,7 @@ export default function App() {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:'You are an elite football analytics AI for Westfield Shamrocks. Be specific and data-driven. Season data: 117 plays. Cooper Melvin QB1: 63 att 50 comp 84% 658yds 13.2ypa RTG87 Grade A. Ben Kooi QB2: 54 att 38 comp 70% 310yds 6.5ypa RTG71 Grade B. Concepts: Baltimore 100% 12.4avg ELITE EPA+1.8, Post 100% 13.1avg ELITE EPA+1.4, Stick 100% 7.7avg ELITE EPA+0.8, Four Verts 100% 22avg ELITE EPA+1.9, Verticals 88% 28.5avg ELITE EPA+2.1, Out 100% SOLID, Slant 90% SOLID, Smash 100% BUILD, RPO Glance 100% BUILD, Sail 0% CUT EPA-0.6, Fade 0% CUT EPA-0.8. Red Zone 0% both QBs critical gap. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Ben TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. ',messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:'You are an elite football analytics AI for Westfield Shamrocks. Be specific and data-driven. Season data: '+plays.length+' plays. Cooper Melvin QB1: 63 att 50 comp 84% 658yds 13.2ypa RTG87 Grade A. Ben Kooi QB2: 54 att 38 comp 70% 310yds 6.5ypa RTG71 Grade B. Concepts: Baltimore 100% 12.4avg ELITE EPA+1.8, Post 100% 13.1avg ELITE EPA+1.4, Stick 100% 7.7avg ELITE EPA+0.8, Four Verts 100% 22avg ELITE EPA+1.9, Verticals 88% 28.5avg ELITE EPA+2.1, Out 100% SOLID, Slant 90% SOLID, Smash 100% BUILD, RPO Glance 100% BUILD, Sail 0% CUT EPA-0.6, Fade 0% CUT EPA-0.8. Red Zone 0% both QBs critical gap. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Ben TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. ',messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();const reply=d.content?.[0]?.text||'Error'
         setMsgs(p=>[...p,{role:'assistant',content:reply}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'API connection error.'}])}
@@ -1284,7 +1284,7 @@ export default function App() {
       <div style={{padding:20,display:'flex',flexDirection:'column',height:'82vh'}}>
         <div style={{background:'#0a0d1a',border:'1px solid #06b6d4',borderRadius:8,padding:12,marginBottom:10}}>
           <div style={{fontSize:11,fontWeight:700,color:'#06b6d4',letterSpacing:2}}>🤖 AI COACHING ASSISTANT — Powered by Claude</div>
-          <div style={{fontSize:8,color:'#69758a',marginTop:2}}>Knows all 117 plays · Every concept · Cooper and Ben full profiles · Game plan ready</div>
+          <div style={{fontSize:8,color:'#69758a',marginTop:2}}>Knows all {plays.length} plays · Every concept · Cooper and Ben full profiles · Game plan ready</div>
         </div>
         <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
           {qs.map(q=><button key={q} onClick={()=>send(q)} style={{padding:'4px 10px',background:'#10151d',border:'0.5px solid #27313f',borderRadius:20,color:'#9ca3af',fontSize:9,cursor:'pointer'}}>{q}</button>)}
@@ -1405,7 +1405,7 @@ export default function App() {
       setLoad(true);setPlan('')
       const prompt=`Generate a game plan for Westfield Shamrocks for a ${gt} game${opp?' vs '+opp:''}. Focus: ${foc}.\n\nFormat exactly:\n**OPENING SCRIPT (First 5 Plays)**\nList 5 specific plays with reasoning\n\n**TOP CONCEPTS TO CALL**\nTop 4 concepts with stats\n\n**HASH STRATEGY**\nLeft/Middle/Right approach\n\n**AVOID COMPLETELY**\nWhat to cut and why\n\n**SITUATIONAL CALLS**\n3rd down, red zone, 2-minute\n\n**COOPER SPOTLIGHT**\n2-3 plays for college scouts\n\n**BEN KOOI PACKAGE**\n2-3 plays for Ben\n\nReference actual stats. Be specific.`
       try{
-        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:`You are an elite offensive coordinator for Westfield Shamrocks. Season data: 117 plays. Cooper QB1: 84% 658yds 13.2ypa RTG87 Grade A. Ben QB2: 70% 310yds 6.5ypa RTG71 Grade B. Best plays: Baltimore 100% EPA+1.8, Post 100% EPA+1.4, Verticals 88% EPA+2.1, Stick 100% EPA+0.8, Four Verts 100% EPA+1.9. Cut: Sail 0% EPA-0.6, Fade 0% EPA-0.8. Red Zone 0% both QBs. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88%. Ben TTT 1.9s airYards 6.5 CPOE-3%.`,messages:[{role:'user',content:prompt}]})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:`You are an elite offensive coordinator for Westfield Shamrocks. Season data: ${plays.length} plays. Cooper QB1: 84% 658yds 13.2ypa RTG87 Grade A. Ben QB2: 70% 310yds 6.5ypa RTG71 Grade B. Best plays: Baltimore 100% EPA+1.8, Post 100% EPA+1.4, Verticals 88% EPA+2.1, Stick 100% EPA+0.8, Four Verts 100% EPA+1.9. Cut: Sail 0% EPA-0.6, Fade 0% EPA-0.8. Red Zone 0% both QBs. Cooper TTT 2.0s airYards 13.2 CPOE+4% deepBall 88%. Ben TTT 1.9s airYards 6.5 CPOE-3%.`,messages:[{role:'user',content:prompt}]})})
         const d=await r.json();setPlan(d.content?.[0]?.text||'Error')
       }catch(e){setPlan('Connection error.')}
       setLoad(false)
@@ -1418,7 +1418,7 @@ export default function App() {
     return(
       <div style={{padding:20}}>
         <div style={{background:'#1a1400',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>⚡ AI GAME PLAN GENERATOR — Built from your 117-play season</div>
+          <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>⚡ AI GAME PLAN GENERATOR — Built from your {plays.length}-play season</div>
           <div style={{fontSize:8,color:'#69758a',marginTop:2}}>Concept grades · EPA scores · Zone analysis · Cooper and Ben profiles · All baked in</div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:isMobile?8:10,marginBottom:14}}>
@@ -1432,7 +1432,7 @@ export default function App() {
         <button onClick={gen} disabled={load} style={{width:'100%',padding:'14px',background:load?'#141a23':'#2a1400',border:`1px solid ${load?'#27313f':'#F0B429'}`,borderRadius:8,color:load?'#69758a':'#F0B429',fontWeight:700,fontSize:14,cursor:load?'default':'pointer',marginBottom:16}}>
           {load?'Generating game plan from your data...':'⚡ GENERATE GAME PLAN'}
         </button>
-        {plan?<div style={{background:'#10151d',border:'0.5px solid #27313f',borderRadius:8,padding:16}}><div style={{fontSize:9,fontWeight:700,color:'#2fbf71',letterSpacing:1,marginBottom:10,paddingBottom:8,borderBottom:'0.5px solid #27313f'}}>WESTFIELD SHAMROCKS — {gt.toUpperCase()}{opp?' vs '+opp.toUpperCase():''} · Generated by AI · 117 plays</div>{fmt(plan)}</div>
+        {plan?<div style={{background:'#10151d',border:'0.5px solid #27313f',borderRadius:8,padding:16}}><div style={{fontSize:9,fontWeight:700,color:'#2fbf71',letterSpacing:1,marginBottom:10,paddingBottom:8,borderBottom:'0.5px solid #27313f'}}>WESTFIELD SHAMROCKS — {gt.toUpperCase()}{opp?' vs '+opp.toUpperCase():''} · Generated by AI · {plays.length} plays</div>{fmt(plan)}</div>
         :<div style={{background:'#10151d',border:'0.5px solid #1a212c',borderRadius:8,padding:30,textAlign:'center',color:'#2e3744',fontSize:12}}>Configure above and generate your personalized game plan</div>}
       </div>
     )
@@ -1540,7 +1540,7 @@ export default function App() {
       const um={role:'user',content:msg};const nm=[...msgs,um]
       setMsgs(nm);setInp('');setLoad(true)
       try{
-        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: 117 plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Strong arm + mobile QB profile. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
+        const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:`You are a live sideline AI for Westfield Shamrocks. Give SHORT DIRECT answers max 3 sentences. Coaches need instant answers. Reference real play names and numbers. Season: ${plays.length} plays. Cooper QB1: 63att 50comp 84% 658yds 13.2ypa RTG87 A ELITE. TTT 2.0s airYards 13.2 CPOE+4% deepBall 88% hash 73%. Style: Strong arm + mobile QB profile. Ben QB2: 54att 38comp 70% 310yds 6.5ypa RTG71 B DEV. TTT 1.9s airYards 6.5 CPOE-3% deepBall 50% hash 60%. BEST: Baltimore 100% EPA+1.8 | Post 100% EPA+1.4 | Stick 100% EPA+0.8 | FourVerts 100% EPA+1.9 | Verticals 88% EPA+2.1. CUT: Sail 0% EPA-0.6 Fade 0% EPA-0.8. RedZone 0% both QBs critical. ZONES Cooper/Ben: LeftDeep 85/82 MidDeep 88/86 RightDeep 0/0 LeftShort 73/70 MidShort 87/85 RightShort 73/68. Live: ${liveStat()}`,messages:nm.map(m=>({role:m.role,content:m.content}))})})
         const d=await r.json();setMsgs(p=>[...p,{role:'assistant',content:d.content?.[0]?.text||'Error'}])
       }catch(e){setMsgs(p=>[...p,{role:'assistant',content:'Connection error.'}])}
       setLoad(false)
@@ -2102,7 +2102,7 @@ export default function App() {
       <div style={{padding:isMobile?10:16,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0d1117',border:'1px solid #F0B429',borderRadius:8,padding:12,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:'#F0B429',letterSpacing:2}}>📊 SEASON DASHBOARD — 2026-2027 Full Overview</div>
-          <div style={{fontSize:8,color:'#69758a',marginTop:2}}>117 plays · 6 sessions · Both QBs · All concepts · Everything at a glance</div>
+          <div style={{fontSize:8,color:'#69758a',marginTop:2}}>{plays.length} plays · 6 sessions · Both QBs · All concepts · Everything at a glance</div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(3,1fr)':'repeat(6,1fr)',gap:6,marginBottom:12}}>
           {[['117','Total Plays','#2fbf71'],['84%','Cooper Comp','#2fbf71'],['70%','Ben Comp','#F0B429'],['87','Cooper RTG','#2fbf71'],['71','Ben RTG','#F0B429'],['A','Season Grade','#2fbf71']].map(([v,l,col])=>(
@@ -2473,7 +2473,7 @@ export default function App() {
       <div style={{padding:isMobile?12:20,fontFamily:'Helvetica,Arial,sans-serif'}}>
         <div style={{background:'#0d1117',border:'1px solid #2fbf71',borderRadius:8,padding:14,marginBottom:16}}>
           <div style={{fontSize:11,fontWeight:700,color:'#2fbf71',letterSpacing:2,marginBottom:3}}>📄 SCOUT REPORT GENERATOR — Formal College Evaluation</div>
-          <div style={{fontSize:8,color:'#69758a',lineHeight:1.6}}>AI writes a professional scouting report in the style of D1/D2/D3 recruiting staff · Based on your actual 117-play season data · Print and hand to any college coach you meet</div>
+          <div style={{fontSize:8,color:'#69758a',lineHeight:1.6}}>AI writes a professional scouting report in the style of D1/D2/D3 recruiting staff · Based on your actual {plays.length}-play season data · Print and hand to any college coach you meet</div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
           <div>
@@ -2518,7 +2518,7 @@ export default function App() {
               <div style={{fontSize:11,color:'#c9d1d9'}}>{p.proj}</div>
             </div>
             <button onClick={generate} disabled={load} style={{width:'100%',padding:'14px',background:load?'#141a23':'#15402c',border:`1px solid ${load?'#27313f':'#2fbf71'}`,borderRadius:8,color:load?'#69758a':'#2fbf71',fontWeight:700,fontSize:14,cursor:load?'default':'pointer',marginBottom:8}}>
-              {load?'⏳ Writing scout report from 117 plays...':'📄 GENERATE SCOUT REPORT'}
+              {load?`⏳ Writing scout report from ${plays.length} plays...`:'📄 GENERATE SCOUT REPORT'}
             </button>
             <div style={{background:'#10151d',border:'0.5px solid #27313f',borderRadius:6,padding:10}}>
               <div style={{fontSize:8,fontWeight:700,color:'#2fbf71',marginBottom:4}}>HOW TO USE THIS</div>
@@ -2529,7 +2529,7 @@ export default function App() {
         {report?(
           <div style={{background:'#10151d',border:'0.5px solid #27313f',borderRadius:8,padding:20}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,paddingBottom:10,borderBottom:'0.5px solid #27313f'}}>
-              <div><div style={{fontSize:14,fontWeight:700,color:'#2fbf71'}}>{target.toUpperCase()} — SCOUTING EVALUATION</div><div style={{fontSize:8,color:'#69758a',marginTop:2}}>WESTFIELD SHAMROCKS · CLASS OF {physical.gradYear||'2027'} · Based on 117 tracked plays · Generated by AI analyst</div></div>
+              <div><div style={{fontSize:14,fontWeight:700,color:'#2fbf71'}}>{target.toUpperCase()} — SCOUTING EVALUATION</div><div style={{fontSize:8,color:'#69758a',marginTop:2}}>WESTFIELD SHAMROCKS · CLASS OF {physical.gradYear||'2027'} · Based on {plays.length} tracked plays · Generated by AI analyst</div></div>
               <div style={{background:'#15402c',border:'1px solid #2fbf71',borderRadius:6,padding:'4px 10px',fontSize:8,fontWeight:700,color:'#2fbf71',flexShrink:0}}>CONFIDENTIAL</div>
             </div>
             {fmt(report)}
