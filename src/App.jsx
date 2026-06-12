@@ -4637,7 +4637,7 @@ function ImportModal({ onImport, onClose, currentCount }) {
 }
 
 // ─── TABS ─────────────────────────────────────────────────────
-const TABS = ['Overview','Charts','Play Calls','Replays','Players','Mistakes','Next Practice']
+const TABS = ['Overview','Charts','Play Calls','Replays','Players','Mistakes','Next Practice','Research']
 
 export default function App() {
   const [tab,         setTab]        = useState('Overview')
@@ -5273,6 +5273,7 @@ export default function App() {
           ? <div style={{ textAlign:'center', color:'#9ca3af', padding:60, fontSize:16 }}>No plays match the selected filters.</div>
           : <>
               {tab==='Overview'      && <Overview/>}
+              {tab==='Research' && <ResearchDemo/>}
               {tab==='Charts'        && <Charts/>}
               {tab==='Play Calls'    && <PlayCalls/>}
               {tab==='Replays'       && <Replays/>}
@@ -5284,4 +5285,133 @@ export default function App() {
       </div>
     </div>
   )
+}// ============================================================
+// RESEARCH DEMO TAB · Westfield Offensive Analytics Dashboard
+// Purpose: live walkthrough view for faculty / PhD meetings.
+// Self contained: no imports, no external libraries, inline styles.
+//
+// INSTALL (matches your normal workflow):
+// 1. Paste this whole component into src/App.jsx alongside your
+//    other tab components.
+// 2. Register it in your tab list the same way as your other 32
+//    tabs, e.g. label "Research" rendering <ResearchDemo />.
+// 3. cd ~/Desktop/westfield-clean && git add src/App.jsx
+//    && git commit -m "Add Research demo tab" && git push
+// ============================================================
+
+function ResearchDemo() {
+  const S = {
+    page: { padding: "28px 24px 60px", maxWidth: 980, margin: "0 auto", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.55 },
+    eyebrow: { fontFamily: "ui-monospace, monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#B08C28", margin: "0 0 8px" },
+    h1: { fontSize: 30, fontWeight: 700, margin: "0 0 6px" },
+    sub: { fontSize: 15, opacity: 0.75, margin: "0 0 28px", maxWidth: 680 },
+    h2: { fontSize: 19, fontWeight: 700, margin: "0 0 12px" },
+    section: { marginBottom: 36 },
+    card: { border: "1px solid rgba(176,140,40,0.45)", borderRadius: 10, padding: "18px 20px", marginBottom: 14 },
+    chipRow: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 },
+    chip: { fontFamily: "ui-monospace, monospace", fontSize: 12, border: "1px solid rgba(128,128,128,0.45)", borderRadius: 6, padding: "5px 10px" },
+    statRow: { display: "flex", flexWrap: "wrap", gap: 24, marginTop: 4 },
+    statV: { fontFamily: "ui-monospace, monospace", fontSize: 24, fontWeight: 700, display: "block" },
+    statK: { fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.65 },
+    pipeRow: { display: "flex", flexWrap: "wrap", gap: 10, alignItems: "stretch" },
+    pipeStep: { flex: "1 1 160px", border: "1px solid rgba(128,128,128,0.4)", borderRadius: 10, padding: "12px 14px" },
+    pipeNum: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#B08C28", letterSpacing: "0.15em" },
+    pipeT: { fontWeight: 700, fontSize: 14, margin: "4px 0 4px" },
+    pipeD: { fontSize: 12.5, opacity: 0.75, margin: 0 },
+    findT: { fontWeight: 700, fontSize: 15.5, margin: "0 0 4px" },
+    findD: { fontSize: 14, opacity: 0.78, margin: 0 },
+    tag: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, letterSpacing: "0.18em", color: "#B08C28" },
+    tagRed: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, letterSpacing: "0.18em", color: "#C0573F" },
+    q: { borderLeft: "3px solid #B08C28", padding: "10px 16px", marginBottom: 10, fontSize: 14.5 },
+    qLane: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, letterSpacing: "0.16em", color: "#B08C28", display: "block", marginBottom: 2 },
+    foot: { fontFamily: "ui-monospace, monospace", fontSize: 11, letterSpacing: "0.08em", opacity: 0.6, marginTop: 30 },
+  };
+
+  const schema = ["id", "qb", "concept", "result", "yards", "down", "field", "ttt", "date", "session", "opponent", "quarter"];
+
+  const pipeline = [
+    { n: "01", t: "Collect", d: "Play by play charted from Hudl film. 14 sessions logged to date." },
+    { n: "02", t: "Engineer", d: "Python and pandas feature scripts build grades, rates, and splits." },
+    { n: "03", t: "Evaluate", d: "EPA framing turns concept results into keep or cut signals." },
+    { n: "04", t: "Benchmark", d: "Every metric compared against NFL 2024 nflfastR play by play." },
+    { n: "05", t: "Deliver", d: "React dashboard, 32+ modules, used by the staff in real time." },
+  ];
+
+  const findings = [
+    { tag: "DECISION", red: false, t: "Sail and Fade cut from the offense", d: "Both graded 0% completion with negative EPA (-0.6 and -0.8). The staff removed them from the call sheet." },
+    { tag: "GAP", red: true, t: "Red zone: 0% conversion, both QBs", d: "No package installed. Surfaced by the field position heat map; install is on the summer plan." },
+    { tag: "SIGNAL", red: false, t: "QB1 at 84% across six sessions", d: "Cooper Melvin: 63 att, 13.2 YPA, two perfect sessions. The 5/12 dip (75%) flagged for film review." },
+  ];
+
+  const questions = [
+    { lane: "VALIDATE", q: "Does NFL derived EPA transfer to the varsity level, and what recalibration does it need?" },
+    { lane: "ADOPT", q: "How does a scholastic coaching staff actually adopt analytics? This program is a live case study." },
+    { lane: "SCALE", q: "Can the pipeline extend to Power 4 programs using public cfbfastR data?" },
+    { lane: "PRO", q: "What decision frameworks (draft capital, fourth down, roster construction) carry to the NFL level?" },
+    { lane: "POLICY", q: "What would statewide data standards for scholastic athletics (IHSAA) look like?" },
+  ];
+
+  return (
+    <div style={S.page}>
+      <p style={S.eyebrow}>Research Mode · Faculty Walkthrough · June 2026</p>
+      <h1 style={S.h1}>From film room to research question</h1>
+      <p style={S.sub}>
+        This view summarizes the dataset, methodology, and findings behind the dashboard
+        you are about to see. Everything else in this app runs on the pipeline described below.
+      </p>
+
+      <div style={S.section}>
+        <h2 style={S.h2}>The dataset</h2>
+        <div style={S.card}>
+          <div style={S.statRow}>
+            <div><span style={S.statV}>500</span><span style={S.statK}>Plays</span></div>
+            <div><span style={S.statV}>14</span><span style={S.statK}>Film sessions</span></div>
+            <div><span style={S.statV}>2</span><span style={S.statK}>QBs graded</span></div>
+            <div><span style={S.statV}>12</span><span style={S.statK}>Fields per row</span></div>
+          </div>
+          <div style={S.chipRow}>
+            {schema.map((c) => (<span key={c} style={S.chip}>{c}</span>))}
+          </div>
+        </div>
+      </div>
+
+      <div style={S.section}>
+        <h2 style={S.h2}>The methodology</h2>
+        <div style={S.pipeRow}>
+          {pipeline.map((p) => (
+            <div key={p.n} style={S.pipeStep}>
+              <span style={S.pipeNum}>{p.n}</span>
+              <p style={S.pipeT}>{p.t}</p>
+              <p style={S.pipeD}>{p.d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={S.section}>
+        <h2 style={S.h2}>What the system has found</h2>
+        {findings.map((f) => (
+          <div key={f.t} style={S.card}>
+            <span style={f.red ? S.tagRed : S.tag}>{f.tag}</span>
+            <p style={S.findT}>{f.t}</p>
+            <p style={S.findD}>{f.d}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={S.section}>
+        <h2 style={S.h2}>Open research questions</h2>
+        {questions.map((x) => (
+          <div key={x.lane} style={S.q}>
+            <span style={S.qLane}>{x.lane}</span>
+            {x.q}
+          </div>
+        ))}
+      </div>
+
+      <p style={S.foot}>
+        JAY R. KELLEY · M.S. SPORTS ANALYTICS, IU INDIANAPOLIS · DATA SHARED CONFIDENTIALLY
+      </p>
+    </div>
+  );
 }
