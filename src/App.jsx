@@ -596,7 +596,42 @@ const NAV = [
 ]
 const TABS = NAV.flatMap(n => n.tabs)
 
-export default function App() {
+function AccessGate({ children }) {
+  const CODE = 'Shamrocks2026'
+  const [ok, setOk] = React.useState(() => {
+    try { return sessionStorage.getItem('wf_gate') === CODE } catch { return false }
+  })
+  const [val, setVal] = React.useState('')
+  const [err, setErr] = React.useState(false)
+  if (ok) return children
+  const submit = () => {
+    if (val.trim() === CODE) {
+      try { sessionStorage.setItem('wf_gate', CODE) } catch {}
+      setOk(true)
+    } else { setErr(true) }
+  }
+  return (
+    <div style={{ minHeight:'100vh', background:'#0d1117', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'system-ui,-apple-system,sans-serif', padding:20 }}>
+      <div style={{ width:'100%', maxWidth:380, background:'#161b22', border:'1px solid #27313f', borderRadius:14, padding:'34px 30px', textAlign:'center' }}>
+        <div style={{ width:52, height:52, margin:'0 auto 18px', border:'2px solid #e3b341', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#e3b341', fontWeight:800, fontSize:18, fontFamily:'Georgia,serif', boxShadow:'2px 2px 0 #1f6f46' }}>JRK</div>
+        <div style={{ color:'#2fbf71', fontSize:11, letterSpacing:2, fontWeight:700, marginBottom:6 }}>WESTFIELD SHAMROCKS ANALYTICS</div>
+        <div style={{ color:'#c9d1d9', fontSize:15, marginBottom:4, fontWeight:600 }}>Private access</div>
+        <div style={{ color:'#8b949e', fontSize:12.5, lineHeight:1.5, marginBottom:20 }}>This platform contains confidential program data. Enter the access code provided in your invitation.</div>
+        <input
+          type="password" value={val} autoFocus
+          onChange={e=>{ setVal(e.target.value); setErr(false) }}
+          onKeyDown={e=>{ if(e.key==='Enter') submit() }}
+          placeholder="Access code"
+          style={{ width:'100%', boxSizing:'border-box', padding:'11px 14px', borderRadius:8, border:`1px solid ${err?'#e5534b':'#27313f'}`, background:'#0d1117', color:'#f4f4f5', fontSize:14, outline:'none', marginBottom:12 }} />
+        {err && <div style={{ color:'#e5534b', fontSize:12, marginBottom:12 }}>Incorrect code. Please check your invitation.</div>}
+        <button onClick={submit} style={{ width:'100%', padding:'11px', borderRadius:8, border:'none', background:'#1f6f46', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', letterSpacing:0.5 }}>Enter platform</button>
+        <div style={{ color:'#69758a', fontSize:10.5, marginTop:18 }}>Authorized viewers only. Do not share this code.</div>
+      </div>
+    </div>
+  )
+}
+
+function AppInner() {
   const [tab,         setTab]        = useState('Overview')
   const [navCat,      setNavCat]     = useState('COMMAND')
   const [isMobile,    setIsMobile]   = useState(typeof window!=='undefined' && window.innerWidth < 768)
@@ -5686,4 +5721,12 @@ function ResearchDemo() {
       </p>
     </div>
   );
+}
+
+export default function App() {
+  return (
+    <AccessGate>
+      <AppInner />
+    </AccessGate>
+  )
 }
